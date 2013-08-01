@@ -2,6 +2,7 @@
 	import customEvents.NavigationEvent;
 	import customEvents.RestartEvent;
 	import flash.events.TimerEvent;
+	import flash.geom.Point;
 	import flash.utils.Timer;
 	import starling.display.Button;
 	import starling.display.Image;
@@ -11,19 +12,25 @@
 	import starling.events.TouchPhase;
 	import starling.text.TextField;
 	import starling.events.Event;
+	import com.greensock.TweenLite;
+	import com.greensock.easing.*;
+
 	
 	public class Deck extends Sprite
 	{
-		private const CARDS_ON_TABLE:int = 54;
 		private const CARDS_TOTAL:int = 104;
+		private const CARDS_ON_TABLE:int = 54;
 		private const CARDS_IN_DECK:int = 50;
-		private const NUM_ROWS:int = 10;
-		private const SPACING:int = 20;
+		private const NUM_ROWS:int = 10; //Rows of cards on the table
+		private const SPACING_Y:int = 20; //Spacing between the cards in Y-axis
+		private const MARGIN_TOP:int = 20; //Spacing from top of stage to cards
+		private const MARGIN_LEFT:int = 20;
+		private const SPACING_X:int = 90;
 		
 		private var mCards:Vector.<Card> = new Vector.<Card>(CARDS_TOTAL, false);
 		private var mCardsDeck:Vector.<Card> = new Vector.<Card>(CARDS_IN_DECK, false);
 		private var mCardsTable:Vector.<Card> = new Vector.<Card>(CARDS_ON_TABLE, false);
-		private var mTopCards:Vector.<Card> = new Vector.<Card>(20);
+		//private var mTopCards:Vector.<Card> = new Vector.<Card>(20);
 		
 		private var mRow0:Vector.<Card> = new Vector.<Card>(0, false);
 		private var mRow1:Vector.<Card> = new Vector.<Card>(0, false);
@@ -36,18 +43,11 @@
 		private var mRow8:Vector.<Card> = new Vector.<Card>(0, false);
 		private var mRow9:Vector.<Card> = new Vector.<Card>(0, false);
 		
-		/*private var mDeckCards1:Vector.<Card> = new Vector.<Card>(0, false);
-		private var mDeckCards2:Vector.<Card> = new Vector.<Card>(0, false);
-		private var mDeckCards3:Vector.<Card> = new Vector.<Card>(0, false);
-		private var mDeckCards4:Vector.<Card> = new Vector.<Card>(0, false);
-		private var mDeckCards5:Vector.<Card> = new Vector.<Card>(0, false);*/
-		
-		//private var mAllDeckStacks:Vector.<Vector.<Card>> = new Vector.<Vector.<Card>>(5, true);
 		private var mAllTableRows:Vector.<Vector.<Card>> = new Vector.<Vector.<Card>>(10, true);
 		
 		private var SUPERNUM:int = 1;
 		
-		private var mCurrentSelection:Card;
+		private var mClickedCard:Card;
 		private var lastObj:Card;
 		private var lastTopCard:Card;
 		
@@ -86,7 +86,6 @@
 			LinkCards(mRow8);
 			LinkCards(mRow9);
 			PlaceDeckCards();
-			//DisplayNumberOfCardsInDeck();
 		}
 		public function MakeDeck():void
 		{
@@ -190,74 +189,75 @@
 		private function AddCardsToStage():void
 		{
 			var xPos:int;
-			var yPos:int = 40;
-			var stageHW:int = 320 - 83;
+			var yPos:int;
 			
 			for(var i:int = 0; i < mCardsTable.length; i++)
 			{
+				xPos = MARGIN_LEFT;
+				yPos = MARGIN_TOP;
 				if(i < 6)
 				{
 					mRow0.push(mCardsTable[i]);
-					xPos = 20;
-					yPos += SPACING * i;
+					xPos += SPACING_X * 0;
+					yPos += SPACING_Y * i;
 				}
 				else if(i < 12)
 				{
 					mRow1.push(mCardsTable[i]);
-					xPos = 60;
-					yPos = SPACING * (i-6);
+					xPos += SPACING_X * 1;
+					yPos += SPACING_Y * (i-6);
 				}
 				else if(i < 18)
 				{
 					mRow2.push(mCardsTable[i]);
-					xPos = 100;
-					yPos = SPACING * (i-12);
+					xPos += SPACING_X *2;
+					yPos += SPACING_Y * (i-12);
 				}
 				else if(i < 24)
 				{
 					mRow3.push(mCardsTable[i]);
-					xPos = 140;
-					yPos = SPACING * (i-18);
+					xPos += SPACING_X *3;
+					yPos += SPACING_Y * (i-18);
 				}
 				else if(i < 29)
 				{
 					mRow4.push(mCardsTable[i]);
-					xPos = 180;
-					yPos = SPACING * (i-24);
+					xPos += SPACING_X *4;
+					yPos += SPACING_Y * (i-24);
 				}
 				else if(i < 34)
 				{
 					mRow5.push(mCardsTable[i]);
-					xPos = 220;
-					yPos = SPACING * (i-29);
+					xPos += SPACING_X *5;
+					yPos += SPACING_Y * (i-29);
 				}
 				else if(i < 39)
 				{
 					mRow6.push(mCardsTable[i]);
-					xPos = 260;
-					yPos = SPACING * (i-34);
+					xPos += SPACING_X *6;
+					yPos += SPACING_Y * (i-34);
 				}
 				else if(i < 44)
 				{
 					mRow7.push(mCardsTable[i]);
-					xPos = 300;
-					yPos = SPACING * (i-39);
+					xPos += SPACING_X * 7;
+					yPos += SPACING_Y * (i-39);
 				}
 				else if(i < 49)
 				{
 					mRow8.push(mCardsTable[i]);
-					xPos = 340;
-					yPos = SPACING * (i-44);
+					xPos += SPACING_X * 8;
+					yPos += SPACING_Y * (i-44);
 				}
 				else if(i < 54)
 				{
 					mRow9.push(mCardsTable[i]);
-					xPos = 380;
-					yPos = SPACING * (i-49);
+					xPos += SPACING_X * 9;
+					yPos += SPACING_Y * (i-49);
 				}
 				PlaceCard(mCards[i], xPos, yPos);
 				
-				//mCards[i].addEventListener(TouchEvent.TOUCH, OnTableCardClick);
+				mCards[i].addEventListener(TouchEvent.TOUCH, OnTableCardClick);
 				
 				/*else
 				{
@@ -276,6 +276,12 @@
 			mAllTableRows[7] = mRow7;
 			mAllTableRows[8] = mRow8;
 			mAllTableRows[9] = mRow9;
+			
+			for (var i:int = 0; i < NUM_ROWS; i++)
+			{
+				mAllTableRows[i][mAllTableRows[i].length - 1].SetOnTop(true);
+				mAllTableRows[i][mAllTableRows[i].length - 1].FlipCard();
+			}
 		}
 		private function LinkCards(vec:Vector.<Card>):void
 		{
@@ -292,7 +298,7 @@
 				}
 			}
 		}
-		//Makes the card stacks that the player may click on to deal a row of cards
+		//Places the cards in the deck in five stacks of 10
 		public function PlaceDeckCards():void
 		{
 			for(var i:int = 0; i < mCardsDeck.length; i++)
@@ -301,50 +307,30 @@
 				{
 					mCardsDeck[i].x = 25;
 					mCardsDeck[i].y = 25;
-					//mDeckCards1.push(vec[i]);
-					//vec[i].SetRow(0);
 				}
 				else if(i<20)
 				{
 					mCardsDeck[i].x = 75;
 					mCardsDeck[i].y = 25;
-					//mDeckCards2.push(vec[i]);
-					//vec[i].SetRow(1);
 				}
 				else if(i<30)
 				{
 					mCardsDeck[i].x = 125;
 					mCardsDeck[i].y = 25;
-					//mDeckCards3.push(vec[i]);
-					//vec[i].SetRow(2);
 				}
 				else if(i<40)
 				{
 					mCardsDeck[i].x = 175;
 					mCardsDeck[i].y = 25;
-					//mDeckCards4.push(vec[i]);
-					//vec[i].SetRow(3);
 				}
 				else if(i<50)
 				{
 					mCardsDeck[i].x = 225;
 					mCardsDeck[i].y = 25;
-					//mDeckCards5.push(vec[i]);
-					//vec[i].SetRow(4);
 				}
+				
 				this.addChild(mCardsDeck[i]);
 			}
-			/*mDeckCards1[mDeckCards1.length - 1].addEventListener(TouchEvent.TOUCH, OnDeckClick);
-			mDeckCards2[mDeckCards2.length - 1].addEventListener(TouchEvent.TOUCH, OnDeckClick);
-			mDeckCards3[mDeckCards3.length - 1].addEventListener(TouchEvent.TOUCH, OnDeckClick);
-			mDeckCards4[mDeckCards4.length - 1].addEventListener(TouchEvent.TOUCH, OnDeckClick);
-			mDeckCards5[mDeckCards5.length - 1].addEventListener(TouchEvent.TOUCH, OnDeckClick);*/
-			
-		/*	mAllDeckStacks[0] = mDeckCards1;
-			mAllDeckStacks[1] = mDeckCards2;
-			mAllDeckStacks[2] = mDeckCards3;
-			mAllDeckStacks[3] = mDeckCards4;
-			mAllDeckStacks[4] = mDeckCards5;*/
 		
 		}
 		
@@ -354,64 +340,70 @@
 			{
 				if (te.getTouch(this).phase == TouchPhase.BEGAN)
 				{
-					//mCurrentSelection = Card(te.currentTarget);
-					//mCurrentSelection.removeEventListener(TouchEvent.TOUCH, OnDeckClick);
-					//var currentStack:int = mCurrentSelection.GetRow();
-					
-					if (mCardsDeck.length >= 10) //Sjekker at det er igjen nok kort i stacken til å dele ut en runde til
+					if (mCardsDeck.length >= NUM_ROWS) //Checks that there is still cards left in the deck
 					{
 						var cardFromDeck:Card;
 						var topCardInRow:Card;
-						for (var i:int = 0; i < 10; i++)
+						
+						for (var i:int = 0; i < NUM_ROWS; i++)
 						{
-							cardFromDeck = mCardsDeck[mCardsDeck.length - 1];
-							topCardInRow = mAllTableRows[i][mAllTableRows[i].length - 1];
-							trace(topCardInRow);
-							mAllTableRows[i][mAllTableRows[i].length-1].SetOnTop(false); //Sets the old top card in this row to no longer be on top, before adding the new card from the deck
-							mAllTableRows[i][mAllTableRows[i].length] = cardFromDeck;
-							mCardsDeck.pop();
-							mAllTableRows[i][mAllTableRows[i].length - 1].FlipCard();
-							mAllTableRows[i][mAllTableRows[i].length - 1].SetClickable(true);
-							mAllTableRows[i][mAllTableRows[i].length - 1].SetCardBelow(mAllTableRows[i][mAllTableRows[i].length - 2]);
-							mAllTableRows[i][mAllTableRows[i].length - 2].SetCardAbove(mAllTableRows[i][mAllTableRows[i].length - 1]);
-							mAllTableRows[i][mAllTableRows[i].length-1].SetOnTop(true); //Sets the newly added card 
+							cardFromDeck = mCardsDeck[mCardsDeck.length - 1]; //Gets the last card of the deck vector
+							topCardInRow = mAllTableRows[i][mAllTableRows[i].length - 1]; //The top card of the current row on the table
+						
+							topCardInRow.SetOnTop(false); //Sets the old top card in this row to no longer be on top, before adding the new card from the deck
+							
+							cardFromDeck.FlipCard();
+							cardFromDeck.SetOnTop(true); //Sets the card being added to the row to be the top most card
+							cardFromDeck.addEventListener(TouchEvent.TOUCH, OnTableCardClick);
+							//cardFromDeck.SetClickable(true);
+							cardFromDeck.SetCardBelow(mAllTableRows[i][mAllTableRows[i].length - 2]);
+							cardFromDeck.SetCardAbove(mAllTableRows[i][mAllTableRows[i].length - 1]);
+							
+							TweenLite.to(cardFromDeck, 0.4, {x:SPACING_X * i + MARGIN_LEFT, y:SPACING_Y * mAllTableRows[i].length + MARGIN_TOP, ease:Cubic.easeOut});
+							//cardFromDeck.x = SPACING_X * i + MARGIN_LEFT;
+							//cardFromDeck.y = SPACING_Y * mAllTableRows[i].length + MARGIN_TOP;
+							cardFromDeck.SetRow(i);
+							
+							this.setChildIndex(cardFromDeck, numChildren - 1);
+							mAllTableRows[i][mAllTableRows[i].length] = cardFromDeck; //Adds the card to the top of this row
+							mCardsDeck.pop(); //Removes the added card from the deck vector
 							//mCardsTable.push(mAllDeckStacks[currentStack][i]);
-							//CHANGE POSITION
-							trace("Adding cards from stack to table");
 						}
 					}
 					
-				/*	for(var i:int = 0; i < mCardsDeck.length; i++)
+				}
+			}
+		}
+		
+		private function OnTableCardClick(te:TouchEvent):void
+		{
+			if (te.getTouch(this) != null)
+			{
+				if (te.getTouch(this).phase == TouchPhase.BEGAN)
+				{
+					mClickedCard = Card(te.currentTarget);
+					trace("You clicked on: " + mClickedCard);
+					if (mClickedCard.GetOnTop())
 					{
-						if(m_CardsDeck[i].getX() == xPos)
+						if (!mClickedCard.GetFlipped())
 						{
-							m_CardsDeck[i].setDealt(true);
-							c = m_CardsDeck[i];
-							m_CardsTable.push(c);
-							m_stage.removeChild(m_CardsDeck[i]);
-							for(var j:int = 0; j < m_CardsTable.length; j++)
-							{
-								if(m_CardsTable[j].isOnTop())
-								{
-									m_CardsTable[j].setOnTop(false);
-									m_CardsTable[j].setNext(c);
-									c.setPrev(m_CardsTable[j]);
-									c.flipCard();
-									m_stage.addChild(c);
-									c.x = m_CardsTable[j].getX();
-									c.y = m_CardsTable[j].getY()+ spacing;
-									break;
-								}
-							}
-						}*/
-					
+							//FLIP CARD
+						}
+					}
+				}
+				else if (te.getTouch(this).phase == TouchPhase.MOVED)
+				{
+					var touchPos:Point = te.getTouch(this).getLocation(this);
+					mClickedCard = Card(te.currentTarget);
+					if (mClickedCard.GetOnTop())
+					{
+						mClickedCard.x = touchPos.x - mClickedCard.width / 2;
+						mClickedCard.y = touchPos.y - mClickedCard.height / 2;
 					}
 				}
 			}
-			//deleteDealtCardsFromDeck();
+		}
 			
-		//}
-		
 		/*public function onMousePress(e:MouseEvent):void
 		{
 			updateTopCards();
@@ -674,16 +666,6 @@
 				}
 			}
 		}
-		public function deleteDealtCardsFromDeck():void
-		{
-			for(var i:int = 0; i < m_CardsDeck.length; i++)
-			{
-				if(m_CardsDeck[i].checkDealt())
-				{
-					m_CardsDeck.splice(i, 1);
-				}
-			}
-		}
 		
 		public function saveLastMove(o:Card, p:Card, pos:Point):void
 		{
@@ -692,32 +674,8 @@
 			_lastStartCoords = pos;
 			
 		}
-		public function makeGrid():void
-		{
-			m_grid = new Array(GRID_COLUMNS);
-			for(var i:int = 0; i < GRID_COLUMNS; i++)
-			{
-				m_grid[i] = new Array(GRID_ROWS);
-			}
-			for(var c:int = 0; c < GRID_COLUMNS; c++)
-			{
-				for(var r:int = 0; r <GRID_ROWS; r++)
-				{
-					m_grid[c][r] = new MovieClip();
-					m_stage.addChild(m_grid[c][r]);
-					m_grid[c][r].x = (c+0.25)*100;
-					m_grid[c][r].y = (r+8)*spacing;
-				}
-			}
-			
-		}
-		public function makeEmptySlots():void
-		{
-			for(var i:int = 0; i < 10; i++)
-			{
-				m_emptyPlaces[i] = new Card("Blank", 15, false);
-			}
-		}*/
+		
+		
 		
 	/*	public function Cleanup(e:Event):void
 		{

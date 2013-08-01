@@ -18,6 +18,7 @@
   <classpaths>
     <class path="src" />
     <class path="starling\src" />
+    <class path="..\..\DevelopmentLibs\greensock-as3" />
   </classpaths>
   <!-- Build options -->
   <build>

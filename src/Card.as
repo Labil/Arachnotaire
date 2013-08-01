@@ -37,16 +37,22 @@
 		}
 		public function SetOnTop(b:Boolean):void { mIsOnTop = b; }
 		public function GetOnTop():Boolean { return mIsOnTop; }
-		public function SetClickable(_clickable:Boolean):void { mbClickable = _clickable; }
-		public function GetClickable():Boolean { return mbClickable; }
+		//public function SetClickable(_clickable:Boolean):void { mbClickable = _clickable; }
+		//public function GetClickable():Boolean { return mbClickable; }
 		public function SetRow(_row:int):void { mRow = _row; }
 		public function GetRow():int { return mRow; }
 		public function GetValue():int { return mValue; }
 		public function GetType():String { return mType; }
+		public function GetFlipped():Boolean { return mbFlipped; }
 		
 		public function SetCardBelow(c:Card):void { mCardBelow = c; }
 		public function SetCardAbove(c:Card):void { mCardAbove = c; }
 		
+		public function FlipCard():void
+		{
+			mbFlipped = true;
+			SetCardGraphics();
+		}
 		public function GetCardBelow():Card
 		{
 			if(mCardBelow != null)
@@ -64,22 +70,35 @@
 		
 		public function SetCardGraphics():void
 		{	
-				cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_" + mType + "s"));
-				cardImage.width = cardWidth;
-				cardImage.height = cardHeight;
-				this.addChild(cardImage);
-				
-				textField = new TextField(30, 30, String(mValue), "Arial", 20);
-				textField.hAlign = HAlign.LEFT;
-				textField.x = 7;
-				textField.y = 5;
-				this.addChild(textField);
-				
-				outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
-				outline.width = cardWidth;
-				outline.height = cardHeight;
-				this.addChild(outline);
-				outline.visible = false;
+				if (mbFlipped)
+				{
+					cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_" + mType + "s"));
+					cardImage.width = cardWidth;
+					cardImage.height = cardHeight;
+					this.addChild(cardImage);
+					
+					textField = new TextField(30, 30, String(mValue), "Arial", 20);
+					textField.hAlign = HAlign.LEFT;
+					textField.x = 7;
+					textField.y = 5;
+					this.addChild(textField);
+					
+					outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
+					outline.width = cardWidth;
+					outline.height = cardHeight;
+					this.addChild(outline);
+					outline.visible = false;
+				}
+				else
+				{
+					cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Background"));
+					cardImage.width = cardWidth;
+					cardImage.height = cardHeight;
+					this.addChild(cardImage);
+					
+					if(textField != null)
+						textField.visible = false;
+				}
 				
 		}
 		public function SetSelected(b:Boolean):void
