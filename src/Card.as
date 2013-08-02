@@ -21,8 +21,10 @@
 		private var mbClickable:Boolean;
 		private var mIsOnTop:Boolean;
 		private var mRow:int;
-		private const cardWidth:int = 83;
-		private const cardHeight:int = 120;
+		private const cardWidth:int = 65;
+		private const cardHeight:int = 94;
+		//private var cardWidth:int;
+		//private var cardHeight:int;
 		private const numberWidth:int = 25;
 		private const numberHeight:int = 33;
 		
@@ -65,8 +67,6 @@
 				return mCardAbove;
 			else return null;
 		}
-//		public function isOnTop():Boolean { return m_bIsOnTop;}
-//		public function setOnTop(b:Boolean):void { m_bIsOnTop = b;}
 		
 		public function SetCardGraphics():void
 		{	
