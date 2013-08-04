@@ -317,24 +317,18 @@
 					if (mTopCards[i] == oldTopCard)
 					{
 						oldTopCard.SetOnTop(false);
-						//oldTopCard.SetCardAbove(newTopCard);
-						//newTopCard.SetCardBelow(oldTopCard);
 						
-						mTopCards[i] = newTopCard; //Viktig at denne settes til newTopCard etter at man er ferdig med oldTopCard, ellers blir linkinga feil
+						mTopCards[i] = newTopCard;
 						newTopCard.SetOnTop(true);
-					
-						//newTopCard.SetCardAbove(null);
 					}
 				}
 			}
 			//If card is placed in an empty row
 			else
 			{
-				//mTopCards[mTopCards.length] = newTopCard;
+				trace("Inserting new topcard to array without removing old.. TopCard.length = " + mTopCards.length);
 				mTopCards.push(newTopCard);
 				newTopCard.SetOnTop(true);
-				//newTopCard.SetCardBelow(null);
-				//newTopCard.SetCardAbove(null);
 			}
 		}
 		private function LinkCards(vec:Vector.<Card>):void
@@ -425,7 +419,11 @@
 		
 		private function MoveCardsFromDeckToTable(card:Card, row:int):void
 		{
-			var cardBelow:Card = mAllTableRows[row][mAllTableRows[row].length - 1];
+			var cardBelow:Card; 
+			if (mAllTableRows[row].length > 0)
+				cardBelow = mAllTableRows[row][mAllTableRows[row].length - 1];
+			else cardBelow = null;
+			
 			card.FlipCard();
 			card.SetRow(row);
 			
@@ -464,9 +462,17 @@
 			if (mAllTableRows[previousRow].length > 0)
 			{
 				prevCardBelow = mAllTableRows[previousRow][mAllTableRows[previousRow].length -1];
-				UpdateTopCards(prevCardBelow, card); //Removes the moved card from the topCards-vector, and replaces it with the card that was below the moved card
+				if(mMovableCards.length > 0)
+					UpdateTopCards(prevCardBelow, mMovableCards[mMovableCards.length - 1]); //Removes the moved card from the topCards-vector, and replaces it with the card that was below the moved card
+				else
+					UpdateTopCards(prevCardBelow, card);
 				if (!prevCardBelow.GetFlipped())
 					prevCardBelow.FlipCard();
+			}
+			else
+			{
+				//Remove from topcards
+				mTopCards.splice(previousRow, 1);
 			}
 			if (mAllTableRows[row].length > 0)
 			{
@@ -491,12 +497,12 @@
 				//mAllTableRows[row][mAllTableRows[row].length] = mMovableCards[j];
 				mAllTableRows[row].push(mMovableCards[j]);
 			}
-			//LinkCards(mAllTableRows[row]);
-			//LinkCards(mAllTableRows[previousRow]);
+			LinkCards(mAllTableRows[row]);
+			LinkCards(mAllTableRows[previousRow]);
 			
 			TweenLite.to(card, 0.1, { x:movePos.x, y:movePos.y, ease:Cubic.easeOut } );
 			
-			for (var j:int = 0; j < mMovableCards.length; j++)
+			for (j = 0; j < mMovableCards.length; j++)
 			{
 				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (SPACING_Y * (j+1)), ease:Cubic.easeOut } );
 			}
@@ -511,12 +517,13 @@
 				
 				if (te.getTouch(this).phase == TouchPhase.BEGAN)
 				{ 
-					trace("This cards row num is: " + mClickedCard.GetRow());
-					trace("This card is on top: " + mClickedCard.GetOnTop());
-					if(mClickedCard.GetCardAbove())
-						trace("This cards cardAbove is: " + mClickedCard.GetCardAbove() + " and it belongs to the row: " + mClickedCard.GetCardAbove().GetRow());
-					if(mClickedCard.GetCardBelow())
-						trace("This cards cardBelow is: " + mClickedCard.GetCardBelow() + " and it belongs to the row: " + mClickedCard.GetCardBelow().GetRow());
+					//trace("This cards row num is: " + mClickedCard.GetRow());
+					//trace("This card is on top: " + mClickedCard.GetOnTop());
+					//if(mClickedCard.GetCardAbove())
+						//trace("This cards cardAbove is: " + mClickedCard.GetCardAbove() + " and it belongs to the row: " + mClickedCard.GetCardAbove().GetRow());
+					//if(mClickedCard.GetCardBelow())
+					//	trace("This cards cardBelow is: " + mClickedCard.GetCardBelow() + " and it belongs to the row: " + mClickedCard.GetCardBelow().GetRow());
+					//trace(hasMoved);
 				
 				}
 				else if (te.getTouch(this).phase == TouchPhase.MOVED)
@@ -529,6 +536,7 @@
 						{
 							if (!hasMoved)
 							{	
+								//trace("CardIsBlocked: " + cardIsBlocked);
 								savedCardPos = new Point(mClickedCard.x, mClickedCard.y);
 								hasMoved = true;
 								this.setChildIndex(mClickedCard, numChildren - 1);
@@ -541,6 +549,7 @@
 						{
 							if (!hasMoved)
 							{
+								EmptyMovableCards();
 								CheckCardsAbove(mClickedCard);
 								if (!cardIsBlocked)
 								{
@@ -567,7 +576,7 @@
 										mClickedCard.x = touchPos.x - mClickedCard.width / 2;
 										mClickedCard.y = touchPos.y - mClickedCard.height / 2;
 										
-										for (var i:int = 0; i < mMovableCards.length; ++i)
+										for (i = 0; i < mMovableCards.length; ++i)
 										{
 											mMovableCards[i].x = mClickedCard.x;
 											mMovableCards[i].y = mClickedCard.y + (SPACING_Y * (i+1));
@@ -585,23 +594,18 @@
 					{
 						var cardBelow:Card = CheckCardMove();
 						var lastRow:int = mClickedCard.GetRow();
-						hasMoved = false;
-					    cardIsBlocked = false;
+						//hasMoved = false;
+					   // cardIsBlocked = false;
 						
-						if (cardBelow != null && CheckForRightColorAndValue(cardBelow))
+					   trace("Card below move: " + cardBelow);
+					   if(cardBelow != null)
+						trace("CheckRightValue: " + CheckForRightValue(cardBelow))
+						if (cardBelow != null && CheckForRightValue(cardBelow))
 						{
-							//if (CheckForRightColorAndValue(cardBelow))
-							//{
-								var row:int = cardBelow.GetRow();
-							
-								//trace("The row that was hit is: " + row);
-								MoveCardToRow(mClickedCard, row);
-								
-								LinkCards(mAllTableRows[row]);
-								LinkCards(mAllTableRows[lastRow]);
-						//	}
-							
-							
+							var row:int = cardBelow.GetRow();
+						
+							MoveCardToRow(mClickedCard, row);
+					
 						}
 						//TODO: Add else if(card touch emtpy space)
 						else
@@ -610,15 +614,18 @@
 							
 							if (mMovableCards.length > 0)
 							{
-								for (var i:int = 0; i < mMovableCards.length; i++)
+								for (var j:int = 0; j < mMovableCards.length; j++)
 								{
-									TweenLite.to(mMovableCards[i], 0.3, { x:savedCardPos.x, y:savedCardPos.y + (SPACING_Y*(i+1)), ease:Cubic.easeOut } );
+									TweenLite.to(mMovableCards[j], 0.3, { x:savedCardPos.x, y:savedCardPos.y + (SPACING_Y*(j+1)), ease:Cubic.easeOut } );
 								}
+								
 							}
 						}
 						
 						
 					}
+					hasMoved = false;
+					cardIsBlocked = false;
 					EmptyMovableCards();
 					
 				}
@@ -646,7 +653,7 @@
 			}
 		}
 		
-		private function CheckForRightColorAndValue(cardBelow:Card):Boolean
+		private function CheckForRightValue(cardBelow:Card):Boolean
 		{
 			//if (cardBelow.GetType() == mClickedCard.GetType())
 			trace("TRY TO CHECK COLOR");
@@ -662,18 +669,32 @@
 		private function CheckCardMove():Card
 		{
 			var currentCardRect:Rectangle = mClickedCard.getBounds(this); //this is to say that it's calculating the bounds in the space of the container it is in, and the cards are in the deck container
+			trace("Topcards.length: " + mTopCards.length);
 			for (var i:int = 0; i < mTopCards.length; i++)
 			{
-				if (mClickedCard != mTopCards[i])
+				var bFoundMatch:Boolean = false;
+				
+				if (mMovableCards.length > 0)
+				{
+					for (var j:int = 0; j < mMovableCards.length; j++)
+					{
+						if (mTopCards[i] == mMovableCards[j])
+						{
+							bFoundMatch = true;
+						}
+					}
+				}
+				if(mTopCards[i] != mClickedCard && !bFoundMatch)
 				{
 					var topCardRect:Rectangle = mTopCards[i].getBounds(this);
-					
+			
 					if (topCardRect.intersects(currentCardRect))
 					{
 						trace("INTERSECTS");
 						return mTopCards[i];
 					}
 				}
+				
 			}
 			return null;
 		}
