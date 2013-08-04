@@ -486,7 +486,6 @@
 				movePos = new Point(SPACING_X * row + MARGIN_LEFT,(SPACING_Y * mAllTableRows[row].length) + MARGIN_TOP);
 			}
 			card.SetRow(row);
-			//mAllTableRows[row][mAllTableRows[row].length] = card;
 			mAllTableRows[row].push(card);
 			
 			for (var j:int = 0; j < mMovableCards.length; j++)
@@ -494,7 +493,6 @@
 				newCardBelow = mAllTableRows[row][mAllTableRows[row].length - 1]; //This is now the last card that was moved
 				UpdateTopCards(mMovableCards[j], newCardBelow);
 				mMovableCards[j].SetRow(row);
-				//mAllTableRows[row][mAllTableRows[row].length] = mMovableCards[j];
 				mAllTableRows[row].push(mMovableCards[j]);
 			}
 			LinkCards(mAllTableRows[row]);
@@ -517,14 +515,6 @@
 				
 				if (te.getTouch(this).phase == TouchPhase.BEGAN)
 				{ 
-					//trace("This cards row num is: " + mClickedCard.GetRow());
-					//trace("This card is on top: " + mClickedCard.GetOnTop());
-					//if(mClickedCard.GetCardAbove())
-						//trace("This cards cardAbove is: " + mClickedCard.GetCardAbove() + " and it belongs to the row: " + mClickedCard.GetCardAbove().GetRow());
-					//if(mClickedCard.GetCardBelow())
-					//	trace("This cards cardBelow is: " + mClickedCard.GetCardBelow() + " and it belongs to the row: " + mClickedCard.GetCardBelow().GetRow());
-					//trace(hasMoved);
-				
 				}
 				else if (te.getTouch(this).phase == TouchPhase.MOVED)
 				{
@@ -536,7 +526,6 @@
 						{
 							if (!hasMoved)
 							{	
-								//trace("CardIsBlocked: " + cardIsBlocked);
 								savedCardPos = new Point(mClickedCard.x, mClickedCard.y);
 								hasMoved = true;
 								this.setChildIndex(mClickedCard, numChildren - 1);
@@ -549,7 +538,7 @@
 						{
 							if (!hasMoved)
 							{
-								EmptyMovableCards();
+								//EmptyMovableCards();
 								CheckCardsAbove(mClickedCard);
 								if (!cardIsBlocked)
 								{
@@ -583,7 +572,6 @@
 										}
 									}
 								}
-								
 							}
 						}
 					}
@@ -594,12 +582,7 @@
 					{
 						var cardBelow:Card = CheckCardMove();
 						var lastRow:int = mClickedCard.GetRow();
-						//hasMoved = false;
-					   // cardIsBlocked = false;
 						
-					   trace("Card below move: " + cardBelow);
-					   if(cardBelow != null)
-						trace("CheckRightValue: " + CheckForRightValue(cardBelow))
 						if (cardBelow != null && CheckForRightValue(cardBelow))
 						{
 							var row:int = cardBelow.GetRow();
@@ -618,21 +601,19 @@
 								{
 									TweenLite.to(mMovableCards[j], 0.3, { x:savedCardPos.x, y:savedCardPos.y + (SPACING_Y*(j+1)), ease:Cubic.easeOut } );
 								}
-								
 							}
 						}
-						
-						
 					}
 					hasMoved = false;
 					cardIsBlocked = false;
 					EmptyMovableCards();
-					
 				}
 			}
 		}
+		
 		private function EmptyMovableCards():void { mMovableCards.length = 0; }
 		
+		//Checks the cards laying on top of the clicked card if they form a continuous row of color and value, and if so are movable - put them in mMovableCards to be moved alongside the clicked card
 		private function CheckCardsAbove(card:Card):void
 		{
 			var cardAbove:Card;
@@ -644,7 +625,6 @@
 					if (cardAbove.GetValue() == card.GetValue() - 1)
 					{
 						mMovableCards.push(cardAbove);
-						//trace("Movable cards length: " + mMovableCards.length);
 						CheckCardsAbove(cardAbove);
 					}
 					else cardIsBlocked = true;
@@ -655,24 +635,19 @@
 		
 		private function CheckForRightValue(cardBelow:Card):Boolean
 		{
-			//if (cardBelow.GetType() == mClickedCard.GetType())
-			trace("TRY TO CHECK COLOR");
-		//	{
 				if (cardBelow.GetValue() == mClickedCard.GetValue() + 1)
-				{
-					trace("TYPE IS RIGHT");
 					return true;
-				}
-		//	}
 			return false;
 		}
+		
+		//Checks if the card or cardstack being moved is dropped onto one of the topcards, and if so returns that card
 		private function CheckCardMove():Card
 		{
 			var currentCardRect:Rectangle = mClickedCard.getBounds(this); //this is to say that it's calculating the bounds in the space of the container it is in, and the cards are in the deck container
-			trace("Topcards.length: " + mTopCards.length);
+			
 			for (var i:int = 0; i < mTopCards.length; i++)
 			{
-				var bFoundMatch:Boolean = false;
+				var foundMatch:Card = mClickedCard; //Sets it to the clicked card temporarily, just so the card will never get null, until it is checked in the mMovableCards for a match
 				
 				if (mMovableCards.length > 0)
 				{
@@ -680,187 +655,24 @@
 					{
 						if (mTopCards[i] == mMovableCards[j])
 						{
-							bFoundMatch = true;
+							foundMatch = mMovableCards[j];
+							break; //There is only one topcard in whatever amount of cards from the same row
 						}
 					}
 				}
-				if(mTopCards[i] != mClickedCard && !bFoundMatch)
+				if(mTopCards[i] != mClickedCard && mTopCards[i] != foundMatch)
 				{
 					var topCardRect:Rectangle = mTopCards[i].getBounds(this);
 			
 					if (topCardRect.intersects(currentCardRect))
-					{
-						trace("INTERSECTS");
 						return mTopCards[i];
-					}
 				}
-				
 			}
 			return null;
 		}
-		/*public function onMousePress(e:MouseEvent):void
-		{
-			updateTopCards();
-			_startCoords = null;
-			_siblingsStartCoords = null;
-			_cardStack.length = 0;
-			for(var coords:Object in _siblingsStartCoords)
-			{
-				delete _siblingsStartCoords[coords];
-			}
-			obj = Card(e.currentTarget);
-			if(obj.isOnTop())
-			{
-				_startCoords = new Point(obj.getX(), obj.getY());
-				m_stage.addEventListener(MouseEvent.MOUSE_UP, onMouseRelease);
-				m_stage.addEventListener(MouseEvent.MOUSE_MOVE, onMoveMouse);
-				
-				m_stage.addChild(obj);  //For at kortet skal havne øverst i displaylista
-				obj.startDrag();
-			}
-			else if(obj.isClickable())
-			{
-				_startCoords = new Point(obj.getX(), obj.getY());
-				m_stage.addEventListener(MouseEvent.MOUSE_UP, onMouseRelease);
-				m_stage.addEventListener(MouseEvent.MOUSE_MOVE, onMoveMouse);
-				
-				var nxt:Card = obj.getNext();
-				if(nxt != null)
-				{
-					
-					addCardsToArray(nxt);
-					for(var p:int = 0; p < _cardStack.length; p++)
-					{
-						if(_cardStack[p].getValue() != obj.getValue()-1-p)
-						{
-							trace("ikke riktig tall");
-							m_stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseRelease);
-							m_stage.removeEventListener(MouseEvent.MOUSE_MOVE, onMoveMouse);
-							return;
-						}
-						if(_cardStack[p].getType() != obj.getType())  //Til endelig versjon av spill
-						{
-							trace("ikke samme farge");
-							m_stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseRelease);
-							m_stage.removeEventListener(MouseEvent.MOUSE_MOVE, onMoveMouse);
-							return;
-						}
-					}
-					m_stage.addChild(obj);  //For at kortet skal havne øverst i displaylista
-					_siblingsStartCoords = new Dictionary(true);
-					for(var i:int = 0; i < _cardStack.length; i++)
-					{
-						_siblingsStartCoords[_cardStack[i]] = new Point(_cardStack[i].getX(), _cardStack[i].getY());
-						m_stage.addChild(_cardStack[i]);
-					}
-					
-					
-				}
-				obj.startDrag();
-			}
-		}*/
+	
 		
-		/*public function onMouseRelease(e:MouseEvent):void
-		{
-			m_stage.removeEventListener(MouseEvent.MOUSE_UP, onMouseRelease);
-			m_stage.removeEventListener(MouseEvent.MOUSE_MOVE, onMoveMouse);
-			obj.stopDrag();
-			
-			for(var i:int = 0; i < m_topCards.length; i++)
-			{
-				if(obj.hitTestObject(m_topCards[i]) && obj != m_topCards[i])
-				{
-					if(m_topCards[i].getValue() == obj.getValue()+1 || m_topCards[i].getValue() == 15)
-					{
-						obj.setX(m_topCards[i].getX());
-						obj.setY(m_topCards[i].getY() + spacing);
-						var prev:Card = obj.getPrev();
-						
-						saveLastMove(obj, m_topCards[i], _startCoords);
-
-						if(prev != null)
-						{
-							prev.setOnTop(true);
-							prev.setNext(null);
-							if(!prev.isClickable())
-							{
-								prev.flipCard();
-							}
-						}
-						else
-						{
-							for(var g:int = 0; g < m_CardsTable.length; g++)
-							{
-								if(m_CardsTable[g].getX() == _startCoords.x) //Trenger bare x, for rekka er i teorien tom
-								{
-									m_CardsTable[g].setOnTop(true);
-								}
-							}
-							//Her kan det opprettes en tom plass der alle kort kan legges
-							/*var empty:Card = new Card("Empty", 14, true);
-							m_stage.addChild(empty);
-							empty.x = _startCoords.x;
-							empty.y = _startCoords.y;
-							empty.flipCard();*/
-							
-					/*	}
-						m_topCards[i].setOnTop(false);
-						m_topCards[i].setNext(obj);
-						obj.setPrev(m_topCards[i]);
-						if(_cardStack.length > 0)
-						{
-							
-							moveSiblings();
-							for(var j:int = 0; j < _cardStack.length; j++)
-							{
-								_cardStack[j].setX(obj.getX());
-								_cardStack[j].setY(obj.getY()+((j+1)*spacing));
-								
-							}
-						}
-						testForWin();
-						return;
-					}
-				}
-			}
-			obj.x = _startCoords.x;
-			obj.y = _startCoords.y;
-			if(_cardStack.length > 0)
-			{
-				moveSiblings();
-			}
-		}*/
-		
-		/*public function onMoveMouse(e:MouseEvent):void
-		{
-			
-			if(_cardStack.length > 0)
-			{
-				moveSiblings();
-			}
-		}
-		private function moveSiblings():void
-		{
-			var xDiff:Number = obj.x - _startCoords.x;
-			var yDiff:Number = obj.y - _startCoords.y;
-			
-			for(var u:int = 0; u < _cardStack.length; u++)
-			{
-				_cardStack[u].x = _siblingsStartCoords[_cardStack[u]].x + xDiff;
-				_cardStack[u].y = _siblingsStartCoords[_cardStack[u]].y + yDiff;
-			}
-			
-		}
-		public function addCardsToArray(card:Card):void
-		{
-			_cardStack.push(card);
-			if(!card.isOnTop())
-			{
-				addCardsToArray(card.getNext());
-			}
-			
-		}
-		
+		/*
 		public function setSortedFalse():void
 		{
 			for(var i:int = 0; i < m_CardsTable.length; i++)
