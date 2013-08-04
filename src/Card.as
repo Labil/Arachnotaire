@@ -36,6 +36,7 @@
 			mType = _type;
 			mValue = _value;
 			SetCardGraphics();
+			//SetClickable(true); //Sets to false when the card is being released from a move and until it is back in its place, so no double clicks to fuck up the movement
 		}
 		public function SetOnTop(b:Boolean):void { mIsOnTop = b; }
 		public function GetOnTop():Boolean { return mIsOnTop; }
@@ -70,6 +71,8 @@
 		
 		public function SetCardGraphics():void
 		{	
+				if (this.mType == "Invisible") //Don't wanna add graphics to the invisible bottom card
+					return;
 				if (mbFlipped)
 				{
 					cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_" + mType + "s"));

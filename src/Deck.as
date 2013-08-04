@@ -33,6 +33,7 @@
 		private var mCardsDeck:Vector.<Card> = new Vector.<Card>(CARDS_IN_DECK, false);
 		private var mCardsTable:Vector.<Card> = new Vector.<Card>(CARDS_ON_TABLE, false);
 		private var mTopCards:Vector.<Card> = new Vector.<Card>(NUM_ROWS, false);
+		private var mBottomCards:Vector.<Card> = new Vector.<Card>(NUM_ROWS, true);
 		
 		private var mRow0:Vector.<Card> = new Vector.<Card>(0, false);
 		private var mRow1:Vector.<Card> = new Vector.<Card>(0, false);
@@ -62,11 +63,13 @@
 		private var mDealCardsButton:Button;
 		
 		private var cooldownTimer:Timer;
-		private var dealOnCooldown:Boolean;
+		//private var dealOnCooldown:Boolean;
 		
 		private var hasMoved:Boolean = false;
 		private var savedCardPos:Point; //Saves the position of the selected card before moving it. Must be declared here because the eventListener keeps running over and over while moving the card 
 		private var cardIsBlocked:Boolean;
+		
+		private var bMoveOnCooldown:Boolean = new Boolean(0);
 
 		public function Deck(difficulty:int)
 		{
@@ -84,6 +87,7 @@
 			MakeDeck();
 			ShuffleDeck(mCards);
 			SeparateTableAndDeck();
+			AddInvisibleCards();
 			//AddDealButton();
 			AddCardsToStage();
 			LinkCards(mRow0);
@@ -191,7 +195,7 @@
 			this.addChild(c);
 			c.x = _X;
 			c.y = _Y;
-			c.SetCardGraphics();
+			//c.SetCardGraphics();
 			
 		}
 		private function AddCardsToStage():void
@@ -307,6 +311,15 @@
 			topCard.SetOnTop(true);
 		}
 		
+		private function AddInvisibleCards():void
+		{
+			for (var i:int = 0; i < NUM_ROWS; i++)
+			{
+				mBottomCards[i] = new Card("Spade", 0);
+				mBottomCards[i].SetRow(i);
+				PlaceCard(mBottomCards[i], MARGIN_LEFT + (SPACING_X * i), MARGIN_TOP);
+			}
+		}
 		//Updates the mTopCards-vector, by replacing the old top card with the new. Also calls the function SetTopCard(boolean) on the respective cards and links the cards together
 		private function UpdateTopCards(newTopCard:Card, oldTopCard:Card = null):void
 		{
@@ -385,7 +398,7 @@
 		//When the player clicks on the button, this event calls a function to add one batch of cards onto the table
 		private function DealCards(te:TouchEvent):void
 		{
-			if (!dealOnCooldown)
+			if (!bMoveOnCooldown)
 			{
 				if (te.getTouch(this) != null)
 				{
@@ -402,9 +415,9 @@
 									
 								MoveCardsFromDeckToTable(cardFromDeck, i);
 							}
-							dealOnCooldown = true;
-							cooldownTimer = new Timer(2000, 1);
-							cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetDealCooldown);
+							bMoveOnCooldown = true;
+							cooldownTimer = new Timer(750, 1);
+							cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetCooldown);
 							cooldownTimer.start();
 						}
 					}
@@ -412,9 +425,9 @@
 			}
 			
 		}
-		private function ResetDealCooldown(e:TimerEvent):void
+		private function ResetCooldown(e:TimerEvent):void
 		{
-			dealOnCooldown = false;
+			bMoveOnCooldown = false;
 		}
 		
 		private function MoveCardsFromDeckToTable(card:Card, row:int):void
@@ -438,7 +451,7 @@
 			else
 			{
 				UpdateTopCards(card);
-				TweenLite.to(card, 0.7, { x:SPACING_X * row + MARGIN_LEFT, y:SPACING_Y * mAllTableRows[row].length + MARGIN_TOP, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
+				TweenLite.to(card, 0.7, { x:SPACING_X * row + MARGIN_LEFT, y:MARGIN_TOP, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
 			}
 			//mCardsTable.push(mAllDeckStacks[currentStack][i]);
 			LinkCards(mAllTableRows[row]);
@@ -483,7 +496,7 @@
 			else
 			{
 				UpdateTopCards(card);
-				movePos = new Point(SPACING_X * row + MARGIN_LEFT,(SPACING_Y * mAllTableRows[row].length) + MARGIN_TOP);
+				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
 			}
 			card.SetRow(row);
 			mAllTableRows[row].push(card);
@@ -509,12 +522,19 @@
 		
 		private function OnTableCardClick(te:TouchEvent):void
 		{
-			if (te.getTouch(this) != null)
+			if (te.getTouch(this) != null && !bMoveOnCooldown)
 			{
 				mClickedCard = Card(te.currentTarget);
 				
 				if (te.getTouch(this).phase == TouchPhase.BEGAN)
 				{ 
+					/*trace("This cards row num is: " + mClickedCard.GetRow());
+		         trace("This card is on top: " + mClickedCard.GetOnTop());
+		         if(mClickedCard.GetCardAbove())
+		           trace("This cards cardAbove is: " + mClickedCard.GetCardAbove() + " and it belongs to the row: " + mClickedCard.GetCardAbove().GetRow());
+		         if(mClickedCard.GetCardBelow())
+		           trace("This cards cardBelow is: " + mClickedCard.GetCardBelow() + " and it belongs to the row: " + mClickedCard.GetCardBelow().GetRow());
+		         trace(hasMoved);*/
 				}
 				else if (te.getTouch(this).phase == TouchPhase.MOVED)
 				{
@@ -582,7 +602,10 @@
 					{
 						var cardBelow:Card = CheckCardMove();
 						var lastRow:int = mClickedCard.GetRow();
+						var emptyRow:int = CheckForEmptyRow();
+						bMoveOnCooldown = true;
 						
+						//If the card is dropped ontop of one of the topmost cards and the value beneath is one higher than the clicked card value
 						if (cardBelow != null && CheckForRightValue(cardBelow))
 						{
 							var row:int = cardBelow.GetRow();
@@ -590,7 +613,12 @@
 							MoveCardToRow(mClickedCard, row);
 					
 						}
-						//TODO: Add else if(card touch emtpy space)
+						//If the card is dropped in an empty row
+						else if (emptyRow != -1 && mAllTableRows[emptyRow].length == 0)
+						{
+							MoveCardToRow(mClickedCard, emptyRow);
+						}
+						//If the card is let go over the wrong value card, or in thin air
 						else
 						{
 							TweenLite.to(mClickedCard, 0.3, { x:savedCardPos.x, y:savedCardPos.y, ease:Cubic.easeOut } );
@@ -607,8 +635,25 @@
 					hasMoved = false;
 					cardIsBlocked = false;
 					EmptyMovableCards();
+					//Start a timer to cooldown the time until the player may click the cards again, to stop them from double clicking on a movable card thus ruining everythang
+					cooldownTimer = new Timer(300, 1);
+					cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetCooldown);
+					cooldownTimer.start();
 				}
 			}
+		}
+		private function CheckForEmptyRow():int
+		{
+			var currentCardRect:Rectangle = mClickedCard.getBounds(this); //this is to say that it's calculating the bounds in the space of the container it is in, and the cards are in the deck container, aka this
+			
+			for (var i:int = 0; i < mBottomCards.length; i++)
+			{
+				var bottomCardRect:Rectangle = mBottomCards[i].getBounds(this);
+				
+				if (bottomCardRect.intersects(currentCardRect))
+						return mBottomCards[i].GetRow();
+			}
+			return -1;
 		}
 		
 		private function EmptyMovableCards():void { mMovableCards.length = 0; }
