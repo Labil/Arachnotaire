@@ -47,30 +47,21 @@
 		private var mRow9:Vector.<Card> = new Vector.<Card>(0, false);
 		
 		private var mAllTableRows:Vector.<Vector.<Card>> = new Vector.<Vector.<Card>>(10, true);
+		private var mMovableCards:Vector.<Card> = new Vector.<Card>(0, false); //Keeps track of the card stack we wanna move 
 		
-		private var mMovableCards:Vector.<Card> = new Vector.<Card>(0, false); //Keeps track of the cards we wanna move 
-		
-		private var SUPERNUM:int = 1;
 		
 		private var mClickedCard:Card;
-		private var lastObj:Card;
-		private var lastTopCard:Card;
-		
-		private var lastCardPosition:Point;
-		private var lastCardRow:int;
 		
 		private var mDifficulty:int;
-		private var mDealCardsButton:Button;
 		
 		private var cooldownTimer:Timer;
-		//private var dealOnCooldown:Boolean;
+		private var bMoveOnCooldown:Boolean = new Boolean(0);
 		
 		private var hasMoved:Boolean = false;
 		private var savedCardPos:Point; //Saves the position of the selected card before moving it. Must be declared here because the eventListener keeps running over and over while moving the card 
 		private var cardIsBlocked:Boolean;
 		
-		private var bMoveOnCooldown:Boolean = new Boolean(0);
-
+		//Ctor
 		public function Deck(difficulty:int)
 		{
 			super();
@@ -82,13 +73,11 @@
 		{
 			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 //			this.addEventListener(Event.REMOVED_FROM_STAGE, Cleanup);
-			//trace("W/H: " + this.stage.stageWidth +" " + this.stage.stageHeight);
 			//AddInGameMenu();
 			MakeDeck();
 			ShuffleDeck(mCards);
 			SeparateTableAndDeck();
 			AddInvisibleCards();
-			//AddDealButton();
 			AddCardsToStage();
 			LinkCards(mRow0);
 			LinkCards(mRow1);
@@ -150,21 +139,7 @@
 			
 			
 		}
-		//The button to click when dealing cards from the deck
-		/*private function AddDealButton():void
-		{
-			mDealCardsButton = new Button(Assets.getAtlas().getTexture("Trilitaire_Card_Background"));
-			mDealCardsButton.width = 83;
-			mDealCardsButton.height = 120;
-			this.addChild(mDealCardsButton);
-			mDealCardsButton.x = 220;
-			mDealCardsButton.y = 470;
-			textField = new TextField(80, 40, "", "Arial",30, Color.WHITE);
-			textField.x = mDealCardsButton.width / 2;
-			textField.y = 150 ;
-			mDealCardsButton.addChild(textField);
-			mDealCardsButton.addEventListener(TouchEvent.TOUCH, DealCards);
-		}*/
+	
 		public function ShuffleDeck(vec:Vector.<Card>):void
 		{
 			var i:int = vec.length;
@@ -195,7 +170,6 @@
 			this.addChild(c);
 			c.x = _X;
 			c.y = _Y;
-			//c.SetCardGraphics();
 			
 		}
 		private function AddCardsToStage():void
@@ -315,34 +289,34 @@
 		{
 			for (var i:int = 0; i < NUM_ROWS; i++)
 			{
-				mBottomCards[i] = new Card("Spade", 0);
+				mBottomCards[i] = new Card("Invisible", 0);
 				mBottomCards[i].SetRow(i);
 				PlaceCard(mBottomCards[i], MARGIN_LEFT + (SPACING_X * i), MARGIN_TOP);
 			}
 		}
-		//Updates the mTopCards-vector, by replacing the old top card with the new. Also calls the function SetTopCard(boolean) on the respective cards and links the cards together
-		private function UpdateTopCards(newTopCard:Card, oldTopCard:Card = null):void
+		//Updates the mTopCards-vector, first by clearing the cards currently marked as top cards, then adding the fresh top cards in each row
+		private function UpdateTopCards():void
 		{
-			if (oldTopCard != null) //If card is not placed in an empty row
+			for (var i:int = 0; i < mTopCards.length; i++)
 			{
-				for (var i:int = 0; i < mTopCards.length; i++)
+				mTopCards[i].SetOnTop(false);
+				mTopCards[i].SetSelected(false);
+			}
+				
+			mTopCards.length = 0;
+			
+			for (var i:int = 0; i < NUM_ROWS; i++)	
+			{
+				if (mAllTableRows[i].length > 0)
 				{
-					if (mTopCards[i] == oldTopCard)
-					{
-						oldTopCard.SetOnTop(false);
-						
-						mTopCards[i] = newTopCard;
-						newTopCard.SetOnTop(true);
-					}
+					mTopCards.push(mAllTableRows[i][mAllTableRows[i].length - 1]);
+					mTopCards[mTopCards.length - 1].SetOnTop(true);
+					mTopCards[mTopCards.length - 1].SetSelected(true);
+					mTopCards[mTopCards.length - 1].FlipCard();
+					mTopCards[mTopCards.length - 1].SetCardAbove(null);
 				}
 			}
-			//If card is placed in an empty row
-			else
-			{
-				trace("Inserting new topcard to array without removing old.. TopCard.length = " + mTopCards.length);
-				mTopCards.push(newTopCard);
-				newTopCard.SetOnTop(true);
-			}
+			
 		}
 		private function LinkCards(vec:Vector.<Card>):void
 		{
@@ -416,9 +390,7 @@
 								MoveCardsFromDeckToTable(cardFromDeck, i);
 							}
 							bMoveOnCooldown = true;
-							cooldownTimer = new Timer(750, 1);
-							cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetCooldown);
-							cooldownTimer.start();
+							SetCooldownTimer(700);
 						}
 					}
 				}
@@ -439,29 +411,22 @@
 			
 			card.FlipCard();
 			card.SetRow(row);
-			
 			mAllTableRows[row][mAllTableRows[row].length] = card;
 			this.setChildIndex(card, numChildren - 1);
-			
-			if (cardBelow != null) //If the row is not empty
-			{
-				UpdateTopCards(card, cardBelow);
-				TweenLite.to(card, 0.7, { x:cardBelow.x, y:cardBelow.y + SPACING_Y, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
-			}
-			else
-			{
-				UpdateTopCards(card);
-				TweenLite.to(card, 0.7, { x:SPACING_X * row + MARGIN_LEFT, y:MARGIN_TOP, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
-			}
-			//mCardsTable.push(mAllDeckStacks[currentStack][i]);
+			UpdateTopCards();
 			LinkCards(mAllTableRows[row]);
 			mCardsDeck.pop();
+			
+			if (cardBelow != null) //If the row is not empty
+				TweenLite.to(card, 0.7, { x:cardBelow.x, y:cardBelow.y + SPACING_Y, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
+			else
+				TweenLite.to(card, 0.7, { x:SPACING_X * row + MARGIN_LEFT, y:MARGIN_TOP, ease:Cubic.easeOut, onComplete:function():void { card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
+			
 		}
 		
 		private function MoveCardToRow(card:Card, row:int):void
 		{
 			var newCardBelow:Card;
-			var prevCardBelow:Card;
 			var previousRow:int = card.GetRow();
 			var movePos:Point;
 		
@@ -471,45 +436,25 @@
 			}
 			mAllTableRows[previousRow].pop();//Removes the card from the row it used to be in
 		
-			//Sets the newly freed card that is now on top of the old stack to be the top card, and flips it if needed
-			if (mAllTableRows[previousRow].length > 0)
-			{
-				prevCardBelow = mAllTableRows[previousRow][mAllTableRows[previousRow].length -1];
-				if(mMovableCards.length > 0)
-					UpdateTopCards(prevCardBelow, mMovableCards[mMovableCards.length - 1]); //Removes the moved card from the topCards-vector, and replaces it with the card that was below the moved card
-				else
-					UpdateTopCards(prevCardBelow, card);
-				if (!prevCardBelow.GetFlipped())
-					prevCardBelow.FlipCard();
-			}
-			else
-			{
-				//Remove from topcards
-				mTopCards.splice(previousRow, 1);
-			}
+			
 			if (mAllTableRows[row].length > 0)
-			{
-				newCardBelow = mAllTableRows[row][mAllTableRows[row].length - 1];
-				UpdateTopCards(card, newCardBelow); //Sets the card as a topCard, and removing the card that's now underneath in the new row from the vector.
-				movePos = new Point(newCardBelow.x, newCardBelow.y + SPACING_Y);
-			}
+				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + SPACING_Y);
 			else
-			{
-				UpdateTopCards(card);
 				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
-			}
+			
 			card.SetRow(row);
 			mAllTableRows[row].push(card);
 			
 			for (var j:int = 0; j < mMovableCards.length; j++)
 			{
-				newCardBelow = mAllTableRows[row][mAllTableRows[row].length - 1]; //This is now the last card that was moved
-				UpdateTopCards(mMovableCards[j], newCardBelow);
 				mMovableCards[j].SetRow(row);
 				mAllTableRows[row].push(mMovableCards[j]);
 			}
+			
 			LinkCards(mAllTableRows[row]);
 			LinkCards(mAllTableRows[previousRow]);
+			
+			UpdateTopCards();
 			
 			TweenLite.to(card, 0.1, { x:movePos.x, y:movePos.y, ease:Cubic.easeOut } );
 			
@@ -528,13 +473,6 @@
 				
 				if (te.getTouch(this).phase == TouchPhase.BEGAN)
 				{ 
-					/*trace("This cards row num is: " + mClickedCard.GetRow());
-		         trace("This card is on top: " + mClickedCard.GetOnTop());
-		         if(mClickedCard.GetCardAbove())
-		           trace("This cards cardAbove is: " + mClickedCard.GetCardAbove() + " and it belongs to the row: " + mClickedCard.GetCardAbove().GetRow());
-		         if(mClickedCard.GetCardBelow())
-		           trace("This cards cardBelow is: " + mClickedCard.GetCardBelow() + " and it belongs to the row: " + mClickedCard.GetCardBelow().GetRow());
-		         trace(hasMoved);*/
 				}
 				else if (te.getTouch(this).phase == TouchPhase.MOVED)
 				{
@@ -558,7 +496,6 @@
 						{
 							if (!hasMoved)
 							{
-								//EmptyMovableCards();
 								CheckCardsAbove(mClickedCard);
 								if (!cardIsBlocked)
 								{
@@ -611,6 +548,11 @@
 							var row:int = cardBelow.GetRow();
 						
 							MoveCardToRow(mClickedCard, row);
+							
+							if (CheckRowForSorted(row))
+							{
+								RemoveSortedFromTable(row);
+							}
 					
 						}
 						//If the card is dropped in an empty row
@@ -636,11 +578,16 @@
 					cardIsBlocked = false;
 					EmptyMovableCards();
 					//Start a timer to cooldown the time until the player may click the cards again, to stop them from double clicking on a movable card thus ruining everythang
-					cooldownTimer = new Timer(300, 1);
-					cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetCooldown);
-					cooldownTimer.start();
+					SetCooldownTimer(300);
+					
 				}
 			}
+		}
+		private function SetCooldownTimer(time:Number):void
+		{
+			cooldownTimer = new Timer(time, 1);
+			cooldownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, ResetCooldown);
+			cooldownTimer.start();
 		}
 		private function CheckForEmptyRow():int
 		{
@@ -715,108 +662,51 @@
 			}
 			return null;
 		}
-	
+		
+		private function CheckRowForSorted(row:int):Boolean
+		{
+			var cardMatchNum:int = 0;
+			
+			for (var i:int = 0; i < mAllTableRows[row].length-1; i++)
+			{
+				
+					if (mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetValue() == mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetValue() - 1 && mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetType() ==mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetType())
+					{
+						cardMatchNum++;
+						trace("Number of correctly sorted is now: " + cardMatchNum);
+						
+					}
+					else break;
+				
+				
+			}
+			if (cardMatchNum >= 12)
+				return true;
+			else
+				return false;
+		}
+		
+		private function RemoveSortedFromTable(row:int):void
+		{
+			for (var i:int = 0; i < 13; i++ )
+			{
+				this.removeChild(mAllTableRows[row][mAllTableRows[row].length - 1]);
+				mAllTableRows[row].pop();
+				mCards.pop();
+			}
+			UpdateTopCards();
+			CheckForWin();
+		}
+		public function CheckForWin():void
+		{
+			if (mCards.length == 0)
+			{
+				trace("WIN!");
+			}
+			
+		}
 		
 		/*
-		public function setSortedFalse():void
-		{
-			for(var i:int = 0; i < m_CardsTable.length; i++)
-			{
-				m_CardsTable[i].setSorted(false);
-			}
-		}
-		
-		public function updateTopCards():void
-		{
-			m_topCards.length = 0;
-			for(var i:int = 0; i < m_CardsTable.length; i++)
-			{
-				if(m_CardsTable[i].isOnTop())
-				{
-					m_topCards.push(m_CardsTable[i]);
-				}
-			}
-		}
-		
-		public function testForWin():void
-		{
-			for(var i:int = 0; i < m_CardsTable.length; i++)
-			{
-				if(m_CardsTable[i].isClickable() && m_CardsTable[i].getNext() != null)
-				{
-					setSortedFalse();
-					testColor(m_CardsTable[i]);
-				}
-				SUPERNUM = 1;
-				
-			}
-			
-		}
-		public function testColor(c:Card):void
-		{
-			
-			var nxt:Card = c.getNext();
-			if(nxt != null)
-			{
-				if(c.getValue()-1 == nxt.getValue())
-				{
-					c.setSorted(true);
-					c.getNext().setSorted(true);
-					testColor(nxt);
-					SUPERNUM++;
-					if(SUPERNUM == 13)
-					{
-						trace("WIN");
-						removeSorted();
-					}
-				}
-				
-			
-			}
-			
-		}
-		public function removeSorted():void
-		{
-			for(var i:int = 0; i < m_CardsTable.length; i++)
-			{
-				if(m_CardsTable[i].checkSorted())
-				{
-					var prev:Card = m_CardsTable[i].getPrev();
-					m_stage.removeChild(m_CardsTable[i]);
-					if(prev != null && !prev.checkSorted())
-					{
-						prev.setOnTop(true);
-						prev.setNext(null);
-						if(!prev.isClickable())
-						{
-							prev.flipCard();
-						}
-					}
-					else if(prev == null)
-					{
-						for(var h:int = 0; h < m_CardsTable.length; h++)
-						{
-							if(m_CardsTable[h].getX() == m_CardsTable[i].getX())
-							{
-								m_CardsTable[h].setOnTop(true);
-							}
-						}
-					}
-					
-				}
-			}
-			deleteSorted();
-		}
-		public function deleteSorted():void
-		{
-			for(var i:int = 0; i < m_CardsTable.length; i++)
-			{
-				if(m_CardsTable[i].checkSorted())
-				{
-					m_CardsTable.splice(i, 1);
-				}
-			}
-		}
 		
 		public function saveLastMove(o:Card, p:Card, pos:Point):void
 		{

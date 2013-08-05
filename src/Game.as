@@ -19,7 +19,7 @@
 		{
 			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 			
-			deck = new Deck(3);
+			deck = new Deck(1);
 			this.addChild(deck);
 			
 			

@@ -53,6 +53,8 @@
 		
 		public function FlipCard():void
 		{
+			if (mbFlipped) //Returns if already flipped (don't need to run SetCardGraphics)
+				return;
 			mbFlipped = true;
 			SetCardGraphics();
 		}
@@ -86,11 +88,14 @@
 					textField.y = 5;
 					this.addChild(textField);
 					
-					outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
-					outline.width = cardWidth;
-					outline.height = cardHeight;
-					this.addChild(outline);
-					outline.visible = false;
+					if (outline != null)
+					{
+						outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
+						outline.width = cardWidth;
+						outline.height = cardHeight;
+						this.addChild(outline);
+						outline.visible = false;
+					}
 				}
 				else
 				{
@@ -98,6 +103,12 @@
 					cardImage.width = cardWidth;
 					cardImage.height = cardHeight;
 					this.addChild(cardImage);
+					
+					outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
+					outline.width = cardWidth;
+					outline.height = cardHeight;
+					this.addChild(outline);
+					outline.visible = false;
 					
 					if(textField != null)
 						textField.visible = false;
