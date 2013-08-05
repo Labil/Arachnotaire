@@ -91,20 +91,33 @@
 			LinkCards(mRow9);
 			PlaceDeckCards();
 		}
-		public function MakeDeck():void
+		private function GenerateRandomType():String
+		{
+			var rand:Number = Math.random();
+			
+			if (rand <= 0.25) return "Spade";
+			else if (rand <= 0.5) return "Heart";
+			else if (rand <= 0.75) return "Diamond";
+			else if (rand <= 1) return "Club";
+			
+			return "Spade";
+		}
+		private function MakeDeck():void
 		{
 			if(mDifficulty == 1)
 			{
+				var type:String = GenerateRandomType();
+
 				for(var i:int = 0; i < CARDS_TOTAL; i++)
 				{
-					if(i<13) { mCards[i] = new Card("Spade", i+1); }
-					else if(i<26) { mCards[i] = new Card("Spade", i-13+1); }
-					else if(i<39) { mCards[i] = new Card("Spade", i-26+1); }
-					else if(i<52) { mCards[i] = new Card("Spade", i-39+1); }
-					else if(i<65) { mCards[i] = new Card("Spade", i-52+1); }
-					else if(i<78) { mCards[i] = new Card("Spade", i-65+1); }
-					else if(i < 91) { mCards[i] = new Card("Spade", i-78+1); }
-					else if(i < 104) { mCards[i] = new Card("Spade", i-91+1); }
+					if(i<13) { mCards[i] = new Card(type, i+1); }
+					else if(i<26) { mCards[i] = new Card(type, i-13+1); }
+					else if(i<39) { mCards[i] = new Card(type, i-26+1); }
+					else if(i<52) { mCards[i] = new Card(type, i-39+1); }
+					else if(i<65) { mCards[i] = new Card(type, i-52+1); }
+					else if(i<78) { mCards[i] = new Card(type, i-65+1); }
+					else if(i < 91) { mCards[i] = new Card(type, i-78+1); }
+					else if(i < 104) { mCards[i] = new Card(type, i-91+1); }
 				}
 			}
 			else if(mDifficulty == 2)
@@ -140,7 +153,7 @@
 			
 		}
 	
-		public function ShuffleDeck(vec:Vector.<Card>):void
+		private function ShuffleDeck(vec:Vector.<Card>):void
 		{
 			var i:int = vec.length;
 			while(i > 0)
@@ -153,7 +166,7 @@
 			}
 		}
 		
-		public function SeparateTableAndDeck():void
+		private function SeparateTableAndDeck():void
 		{
 			var i:int;
 			for(i = 0; i < CARDS_ON_TABLE; i++)
@@ -255,12 +268,6 @@
 				
 				mCards[i].addEventListener(TouchEvent.TOUCH, OnTableCardClick);
 				
-				/*else
-				{
-					mCards[i].SetClickable(true);
-					mCardStack.push(mCards[i]);
-				}*/
-				
 			}
 			mAllTableRows[0] = mRow0;
 			mAllTableRows[1] = mRow1;
@@ -289,7 +296,7 @@
 		{
 			for (var i:int = 0; i < NUM_ROWS; i++)
 			{
-				mBottomCards[i] = new Card("Invisible", 0);
+				mBottomCards[i] = new Card("Blank", 0);
 				mBottomCards[i].SetRow(i);
 				PlaceCard(mBottomCards[i], MARGIN_LEFT + (SPACING_X * i), MARGIN_TOP);
 			}
@@ -300,23 +307,20 @@
 			for (var i:int = 0; i < mTopCards.length; i++)
 			{
 				mTopCards[i].SetOnTop(false);
-				mTopCards[i].SetSelected(false);
 			}
 				
 			mTopCards.length = 0;
 			
-			for (var i:int = 0; i < NUM_ROWS; i++)	
+			for (i = 0; i < NUM_ROWS; i++)	
 			{
 				if (mAllTableRows[i].length > 0)
 				{
 					mTopCards.push(mAllTableRows[i][mAllTableRows[i].length - 1]);
 					mTopCards[mTopCards.length - 1].SetOnTop(true);
-					mTopCards[mTopCards.length - 1].SetSelected(true);
 					mTopCards[mTopCards.length - 1].FlipCard();
 					mTopCards[mTopCards.length - 1].SetCardAbove(null);
 				}
 			}
-			
 		}
 		private function LinkCards(vec:Vector.<Card>):void
 		{
@@ -378,20 +382,17 @@
 				{
 					if (te.getTouch(this).phase == TouchPhase.BEGAN)
 					{
-						if (mCardsDeck.length >= NUM_ROWS) //Checks that there is still cards left in the deck
-						{
-							var cardFromDeck:Card;
+						var cardFromDeck:Card;
 							
-							for (var i:int = 0; i < NUM_ROWS; i++)
-							{
-								cardFromDeck = mCardsDeck[mCardsDeck.length - 1]; //Gets the last card of the deck vector
-								cardFromDeck.removeEventListener(TouchEvent.TOUCH, DealCards);
+						for (var i:int = 0; i < NUM_ROWS; i++)
+						{
+							cardFromDeck = mCardsDeck[mCardsDeck.length - 1]; //Gets the last card of the deck vector
+							cardFromDeck.removeEventListener(TouchEvent.TOUCH, DealCards);
 									
-								MoveCardsFromDeckToTable(cardFromDeck, i);
-							}
-							bMoveOnCooldown = true;
-							SetCooldownTimer(700);
+							MoveCardsFromDeckToTable(cardFromDeck, i);
 						}
+						bMoveOnCooldown = true;
+						SetCooldownTimer(700);
 					}
 				}
 			}
@@ -402,6 +403,7 @@
 			bMoveOnCooldown = false;
 		}
 		
+		//Moves the cards in the deck stack to the table in groups of ten, one new card per row
 		private function MoveCardsFromDeckToTable(card:Card, row:int):void
 		{
 			var cardBelow:Card; 
@@ -418,16 +420,23 @@
 			mCardsDeck.pop();
 			
 			if (cardBelow != null) //If the row is not empty
-				TweenLite.to(card, 0.7, { x:cardBelow.x, y:cardBelow.y + SPACING_Y, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
+				TweenLite.to(card, 0.7, { x:cardBelow.x, y:cardBelow.y + SPACING_Y, ease:Cubic.easeOut, onComplete:function():void{ card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); if (mAllTableRows[row].length >= 18) ShrinkRow(row); } } );
 			else
 				TweenLite.to(card, 0.7, { x:SPACING_X * row + MARGIN_LEFT, y:MARGIN_TOP, ease:Cubic.easeOut, onComplete:function():void { card.addEventListener(TouchEvent.TOUCH, OnTableCardClick); } } );
 			
+			if (CheckRowForSorted(row))
+			{
+				RemoveSortedFromTable(row);
+			}
+				
 		}
 		
 		private function MoveCardToRow(card:Card, row:int):void
 		{
 			var newCardBelow:Card;
 			var previousRow:int = card.GetRow();
+			var previousRowOldLength:int = mAllTableRows[previousRow].length;
+			var previousRowNewLength:int;
 			var movePos:Point;
 		
 			for (var i:int = 0; i < mMovableCards.length; i++)
@@ -436,6 +445,7 @@
 			}
 			mAllTableRows[previousRow].pop();//Removes the card from the row it used to be in
 		
+			previousRowNewLength = mAllTableRows[previousRow].length;
 			
 			if (mAllTableRows[row].length > 0)
 				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + SPACING_Y);
@@ -463,6 +473,25 @@
 				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (SPACING_Y * (j+1)), ease:Cubic.easeOut } );
 			}
 			
+			if (mAllTableRows[row].length >= 18)
+				ShrinkRow(row);
+			else if (previousRowOldLength >= 18 && previousRowNewLength < 18)
+				UnShrinkRow(previousRow);
+			
+		}
+		private function ShrinkRow(row:int):void
+		{
+			for (var i:int = 0; i < mAllTableRows[row].length; i++)
+			{
+				TweenLite.to(mAllTableRows[row][i], 0.2, { x:(SPACING_X * row) + MARGIN_LEFT, y: MARGIN_TOP + (i * SPACING_Y_UNFLIPPED), ease:Cubic.easeOut } );
+			}
+		}
+		private function UnShrinkRow(row:int):void
+		{
+			for (var i:int = 0; i < mAllTableRows[row].length; i++)
+			{
+				TweenLite.to(mAllTableRows[row][i], 0.2, { x:(SPACING_X * row) + MARGIN_LEFT, y: MARGIN_TOP + (i * SPACING_Y), ease:Cubic.easeOut } );
+			}
 		}
 		
 		private function OnTableCardClick(te:TouchEvent):void
@@ -538,7 +567,6 @@
 					if (hasMoved && !cardIsBlocked)
 					{
 						var cardBelow:Card = CheckCardMove();
-						var lastRow:int = mClickedCard.GetRow();
 						var emptyRow:int = CheckForEmptyRow();
 						bMoveOnCooldown = true;
 						
@@ -673,8 +701,6 @@
 					if (mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetValue() == mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetValue() - 1 && mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetType() ==mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetType())
 					{
 						cardMatchNum++;
-						trace("Number of correctly sorted is now: " + cardMatchNum);
-						
 					}
 					else break;
 				

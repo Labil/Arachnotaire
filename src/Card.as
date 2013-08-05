@@ -73,8 +73,15 @@
 		
 		public function SetCardGraphics():void
 		{	
-				if (this.mType == "Invisible") //Don't wanna add graphics to the invisible bottom card
+				if (this.mType == "Blank") //Graphics for the blank cards
+				{
+					cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Blank"));
+					cardImage.width = cardWidth;
+					cardImage.height = cardHeight;
+					this.addChild(cardImage);
+					
 					return;
+				}
 				if (mbFlipped)
 				{
 					cardImage = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_" + mType + "s"));
@@ -88,14 +95,14 @@
 					textField.y = 5;
 					this.addChild(textField);
 					
-					if (outline != null)
+					/*if (outline != null)
 					{
 						outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
 						outline.width = cardWidth;
 						outline.height = cardHeight;
 						this.addChild(outline);
 						outline.visible = false;
-					}
+					}*/
 				}
 				else
 				{
@@ -104,24 +111,24 @@
 					cardImage.height = cardHeight;
 					this.addChild(cardImage);
 					
-					outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
+					/*outline = new Image(Assets.getAtlas().getTexture("Trilitaire_Card_Outline"));
 					outline.width = cardWidth;
 					outline.height = cardHeight;
 					this.addChild(outline);
-					outline.visible = false;
+					outline.visible = false;*/
 					
 					if(textField != null)
 						textField.visible = false;
 				}
 				
 		}
-		public function SetSelected(b:Boolean):void
+		/*public function SetSelected(b:Boolean):void
 		{
 			if (!b)
 				outline.visible = false;
 			else
 				outline.visible = true;
-		}
+		}*/
 		
 		
 

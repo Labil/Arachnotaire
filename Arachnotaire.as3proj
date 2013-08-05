@@ -19,6 +19,7 @@
     <class path="src" />
     <class path="starling\src" />
     <class path="..\..\DevelopmentLibs\greensock-as3" />
+    <class path="..\..\DevelopmentLibs\HiResStats\Hi-ReS-Stats-master\src" />
   </classpaths>
   <!-- Build options -->
   <build>
