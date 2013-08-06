@@ -61,6 +61,8 @@
 		private var savedCardPos:Point; //Saves the position of the selected card before moving it. Must be declared here because the eventListener keeps running over and over while moving the card 
 		private var cardIsBlocked:Boolean;
 		
+		private var mOneColorType:String = "";
+		
 		//Ctor
 		public function Deck(difficulty:int)
 		{
@@ -91,6 +93,17 @@
 			LinkCards(mRow9);
 			PlaceDeckCards();
 		}
+		
+		public function Show():void
+		{
+			this.visible = true;
+		}
+		
+		public function Hide():void
+		{
+			this.visible = false;
+		}
+		
 		private function GenerateRandomType():String
 		{
 			var rand:Number = Math.random();
@@ -106,18 +119,18 @@
 		{
 			if(mDifficulty == 1)
 			{
-				var type:String = GenerateRandomType();
+				mOneColorType = GenerateRandomType();
 
 				for(var i:int = 0; i < CARDS_TOTAL; i++)
 				{
-					if(i<13) { mCards[i] = new Card(type, i+1); }
-					else if(i<26) { mCards[i] = new Card(type, i-13+1); }
-					else if(i<39) { mCards[i] = new Card(type, i-26+1); }
-					else if(i<52) { mCards[i] = new Card(type, i-39+1); }
-					else if(i<65) { mCards[i] = new Card(type, i-52+1); }
-					else if(i<78) { mCards[i] = new Card(type, i-65+1); }
-					else if(i < 91) { mCards[i] = new Card(type, i-78+1); }
-					else if(i < 104) { mCards[i] = new Card(type, i-91+1); }
+					if(i<13) { mCards[i] = new Card(mOneColorType, i+1); }
+					else if(i<26) { mCards[i] = new Card(mOneColorType, i-13+1); }
+					else if(i<39) { mCards[i] = new Card(mOneColorType, i-26+1); }
+					else if(i<52) { mCards[i] = new Card(mOneColorType, i-39+1); }
+					else if(i<65) { mCards[i] = new Card(mOneColorType, i-52+1); }
+					else if(i<78) { mCards[i] = new Card(mOneColorType, i-65+1); }
+					else if(i < 91) { mCards[i] = new Card(mOneColorType, i-78+1); }
+					else if(i < 104) { mCards[i] = new Card(mOneColorType, i-91+1); }
 				}
 			}
 			else if(mDifficulty == 2)
@@ -714,6 +727,7 @@
 		
 		private function RemoveSortedFromTable(row:int):void
 		{
+			var prevLength:int = mAllTableRows[row].length;
 			for (var i:int = 0; i < 13; i++ )
 			{
 				this.removeChild(mAllTableRows[row][mAllTableRows[row].length - 1]);
@@ -721,13 +735,18 @@
 				mCards.pop();
 			}
 			UpdateTopCards();
+			
+			if (prevLength >= 18 && mAllTableRows[row].length < 18)
+				UnShrinkRow(previousRow);
+				
 			CheckForWin();
 		}
 		public function CheckForWin():void
 		{
 			if (mCards.length == 0)
 			{
-				trace("WIN!");
+				var winScreen:WinScreen = new WinScreen(mDifficulty, mOneColorType);
+				this.addChild(winScreen);
 			}
 			
 		}

@@ -19,7 +19,6 @@ package
 		private var playBtn:Button;
 		private var rulesBtn:Button;
 		private var aboutBtn:Button;
-		//private var quitBtn:Button;
 		
 		public function StartMenu() 
 		{
@@ -47,35 +46,26 @@ package
 			{
 				this.dispatchEvent(new NavigationEvent(NavigationEvent.CHANGE_SCREEN, { id:"rules" }, true));
 			}
-			/*else if (buttonClicked == quitBtn)
-			{
-				this.dispatchEvent(new NavigationEvent(NavigationEvent.CHANGE_SCREEN, { id:"quit" }, true));
-			}*/
 		}
 		private function DrawScreen():void
 		{
 			bg = new Image(Assets.getTexture("MainMenuBG"));
 			this.addChild(bg);
 			
-			playBtn = new Button(Assets.getAtlas().getTexture("Trilitaire_Play_Button"));
-			//quitBtn = new Button(Assets.getAtlas().getTexture("Trilitaire_Quit_Button"));
-			rulesBtn = new Button(Assets.getAtlas().getTexture("Trilitaire_Rules_Button"));
-			aboutBtn = new Button(Assets.getAtlas().getTexture("Trilitaire_About_Button"));
+			playBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_Play_Btn"));
+			rulesBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_Rules_Btn"));
+			aboutBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_About_Btn"));
 			
 			playBtn.x = stage.width/2 - playBtn.width/2;
-			playBtn.y = stage.height/2 - (playBtn.height + 40);
+			playBtn.y = stage.height/2 - playBtn.height;
 			this.addChild(playBtn);
 			
-			/*quitBtn.x = stage.width/2 - quitBtn.width/2;
-			quitBtn.y = stage.height - playBtn.height;
-			this.addChild(quitBtn);*/
-			
-			rulesBtn.x = stage.width/4 - 40;
-			rulesBtn.y = stage.height/2 - 40;
+			rulesBtn.x = stage.width/2 - 40;
+			rulesBtn.y = stage.height/2 + 5;
 			this.addChild(rulesBtn);
 			
-			aboutBtn.x = stage.width/2 + aboutBtn.width + 20;
-			aboutBtn.y = stage.height/2 - (aboutBtn.height + 10);
+			aboutBtn.x = stage.width/2 - aboutBtn.width/2;
+			aboutBtn.y = stage.height/2 + 50;
 			this.addChild(aboutBtn);
 			
 			this.addEventListener(Event.TRIGGERED, onMainMenuClick);
@@ -99,7 +89,7 @@ package
 		private function buttonAnimation(evt:Event):void
 		{
 			var currentDate:Date = new Date();
-			playBtn.y = stage.height/2 - (playBtn.height + 40) + (Math.cos(currentDate.getTime() * 0.002) * 5);
+			playBtn.y = stage.height/2 - playBtn.height + (Math.cos(currentDate.getTime() * 0.002) * 1);
 		}
 		
 	}

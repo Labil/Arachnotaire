@@ -13,7 +13,7 @@ package
 	 * ...
 	 * @author Solveig Hansen
 	 */
-	[SWF(width="960", height="640", frameRate="60", backgroundColor="#d4d4d4")]
+	[SWF(width="960", height="640", frameRate="60", backgroundColor="#ffffff")]
 	public class Main extends Sprite 
 	{
 		private var mStarling:Starling;
