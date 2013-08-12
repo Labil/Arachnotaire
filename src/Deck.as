@@ -4,6 +4,7 @@
 	import flash.events.TimerEvent;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.utils.Dictionary;
 	import flash.utils.Timer;
 	import starling.display.Button;
 	import starling.display.Image;
@@ -63,6 +64,11 @@
 		
 		private var mOneColorType:String = "";
 		
+		//Saving last move to be able to undo
+		private var mSaveMovesObject:SaveMovesObject;
+		
+		private var mUndoBtn:Button;
+		
 		//Ctor
 		public function Deck(difficulty:int)
 		{
@@ -92,6 +98,13 @@
 			LinkCards(mRow8);
 			LinkCards(mRow9);
 			PlaceDeckCards();
+			
+			mSaveMovesObject = new SaveMovesObject;
+			
+			mUndoBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_About_Btn"));
+			mUndoBtn.addEventListener(Event.TRIGGERED, Undo);
+			this.addChild(mUndoBtn);
+			
 		}
 		
 		public function Show():void
@@ -441,29 +454,45 @@
 			{
 				RemoveSortedFromTable(row);
 			}
+			mSaveMovesObject.ClearSaves();
 				
 		}
 		
-		private function MoveCardToRow(card:Card, row:int):void
+		private function MoveCardToRow(card:Card, row:int, undo:Boolean = false, shouldUnflip:Boolean = false):void
 		{
 			var newCardBelow:Card;
 			var previousRow:int = card.GetRow();
 			var previousRowOldLength:int = mAllTableRows[previousRow].length;
 			var previousRowNewLength:int;
 			var movePos:Point;
-		
+			var spaceY:int;
+			
 			for (var i:int = 0; i < mMovableCards.length; i++)
 			{
 				mAllTableRows[previousRow].pop(); 
 			}
 			mAllTableRows[previousRow].pop();//Removes the card from the row it used to be in
-		
+			
 			previousRowNewLength = mAllTableRows[previousRow].length;
 			
+			if (!undo)
+				SaveMove(card, previousRow);
+			
 			if (mAllTableRows[row].length > 0)
-				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + SPACING_Y);
+			{
+				if (shouldUnflip)
+				{
+					mAllTableRows[row][mAllTableRows[row].length - 1].UnflipCard();
+					spaceY = SPACING_Y_UNFLIPPED;
+				}
+				else spaceY = SPACING_Y;
+				
+				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + spaceY);
+			}
 			else
+			{
 				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
+			}
 			
 			card.SetRow(row);
 			mAllTableRows[row].push(card);
@@ -479,18 +508,46 @@
 			
 			UpdateTopCards();
 			
+			this.setChildIndex(card, numChildren - 1);
 			TweenLite.to(card, 0.1, { x:movePos.x, y:movePos.y, ease:Cubic.easeOut } );
 			
 			for (j = 0; j < mMovableCards.length; j++)
 			{
-				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (SPACING_Y * (j+1)), ease:Cubic.easeOut } );
+				this.setChildIndex(mMovableCards[j], numChildren - 1);
+				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (spaceY * (j + 1)), ease:Cubic.easeOut } );
 			}
 			
 			if (mAllTableRows[row].length >= 18)
 				ShrinkRow(row);
 			else if (previousRowOldLength >= 18 && previousRowNewLength < 18)
 				UnShrinkRow(previousRow);
+				
+		}
+		private function SaveMove(card:Card, prevRow:int):void
+		{
+			var shouldUnflip:Boolean;
+			mAllTableRows[prevRow].length > 0 ? shouldUnflip = !mAllTableRows[prevRow][mAllTableRows[prevRow].length - 1].GetFlipped() : shouldUnflip = false;
 			
+			mMovableCards.length > 0 ? mSaveMovesObject.SaveLastMove(card, prevRow, shouldUnflip , mMovableCards.slice(0, mMovableCards.length)) : mSaveMovesObject.SaveLastMove(card, prevRow, shouldUnflip);	
+		}
+		
+		private function Undo():void
+		{
+			var savedObject:Dictionary = new Dictionary();
+			savedObject = mSaveMovesObject.LoadLastMove();
+			if (savedObject != null)
+			{
+				/*trace("Saved object index Card:" + savedObject["card"]);
+				trace("Saved object index rowCol:" + savedObject["row"] + " " + savedObject["col"]);
+				trace("Saved object index attached cards:" + savedObject["cards"]);*/
+				if (savedObject["cards"] != null)
+				{
+					mMovableCards = savedObject["cards"].slice(0, savedObject["cards"].length);
+				}
+					
+				MoveCardToRow(savedObject["card"], savedObject["col"], true, savedObject["unflip"]);
+			}
+			else trace("Saved object is null");
 		}
 		private function ShrinkRow(row:int):void
 		{
@@ -503,7 +560,8 @@
 		{
 			for (var i:int = 0; i < mAllTableRows[row].length; i++)
 			{
-				TweenLite.to(mAllTableRows[row][i], 0.2, { x:(SPACING_X * row) + MARGIN_LEFT, y: MARGIN_TOP + (i * SPACING_Y), ease:Cubic.easeOut } );
+				if(mAllTableRows[row][i].GetFlipped())
+					TweenLite.to(mAllTableRows[row][i], 0.2, { x:(SPACING_X * row) + MARGIN_LEFT, y: MARGIN_TOP + (i * SPACING_Y), ease:Cubic.easeOut } );
 			}
 		}
 		
@@ -737,10 +795,11 @@
 			UpdateTopCards();
 			
 			if (prevLength >= 18 && mAllTableRows[row].length < 18)
-				UnShrinkRow(previousRow);
+				UnShrinkRow(row);
 				
 			CheckForWin();
 		}
+		
 		public function CheckForWin():void
 		{
 			if (mCards.length == 0)

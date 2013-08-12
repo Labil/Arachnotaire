@@ -40,8 +40,6 @@
 		}
 		public function SetOnTop(b:Boolean):void { mIsOnTop = b; }
 		public function GetOnTop():Boolean { return mIsOnTop; }
-		//public function SetClickable(_clickable:Boolean):void { mbClickable = _clickable; }
-		//public function GetClickable():Boolean { return mbClickable; }
 		public function SetRow(_row:int):void { mRow = _row; }
 		public function GetRow():int { return mRow; }
 		public function GetValue():int { return mValue; }
@@ -56,6 +54,13 @@
 			if (mbFlipped) //Returns if already flipped (don't need to run SetCardGraphics)
 				return;
 			mbFlipped = true;
+			SetCardGraphics();
+		}
+		public function UnflipCard():void
+		{
+			if (!mbFlipped)
+				return;
+			mbFlipped = false;
 			SetCardGraphics();
 		}
 		public function GetCardBelow():Card
