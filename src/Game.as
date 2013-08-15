@@ -4,7 +4,7 @@
 	import starling.display.Sprite;
 	import starling.events.Event;
 	import customEvents.NavigationEvent;
-	import customEvents.RestartEvent;
+	import customEvents.MenuEvent;
 	
 	public class Game extends Sprite
 	{
@@ -12,6 +12,7 @@
 		private var startMenu:StartMenu;
 		private var difficultyMenu:DifficultyMenu;
 		private var mDifficulty:int;
+		private var bPlayMusic:Boolean = true; //Defaults to true, because sound initializes at start
 		
 		public function Game() 
 		{
@@ -25,7 +26,7 @@
 			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 			
 			this.addEventListener(NavigationEvent.CHANGE_SCREEN, OnChangeScreen);
-			this.addEventListener(RestartEvent.RESTART_GAME, OnRestartGame);
+			this.addEventListener(MenuEvent.BUTTON_CLICK, OnIngameMenuClick);
 			
 			startMenu = new StartMenu();
 			this.addChild(startMenu);
@@ -60,31 +61,55 @@
 					StartGame();
 					difficultyMenu.Hide();
 					break;
-				/*case "ingameRules":
-					ingameRules.Show();
-					deck.Hide();
-					break;
-				case "backToGame":
-					ingameRules.Hide();
-					deck.Show();
-					break;*/
 				default: break;
 					
 			}
 		}
 		private function StartGame():void
 		{
+			if (deck != null)
+				this.removeChild(deck, true);
+			if (mDifficulty != 1 && mDifficulty != 2 && mDifficulty != 3)
+				mDifficulty = 1;
+					
 			deck = new Deck(mDifficulty);
 			this.addChild(deck);
 		}
-		private function OnRestartGame(evt:RestartEvent):void
+		
+		private function OnIngameMenuClick(evt:MenuEvent):void
 		{
-			trace("On restart game");
-			this.removeChild(deck, true);
-			
-			deck = new Deck(1);
-			deck.Show();
-			this.addChild(deck);
+			trace("IngameMenu  running");
+			switch(evt.params.id)
+			{
+				case "menu":
+					deck.Hide();
+					difficultyMenu.Show();
+					break;
+				case "restart":
+					StartGame();
+					break;
+				case "sound":
+					MusicOnOff();
+					break;
+				case "undo":
+					deck.Undo();
+					break;
+				default: break;
+					
+			}
+		}
+		private function MusicOnOff():void
+		{
+			if (bPlayMusic)
+			{
+				SoundManager.instance.PauseSoundtrack();
+				bPlayMusic = false;
+			}
+			else
+			{
+				SoundManager.instance.PlayRandomMusic();
+			}
+				
 			
 		}
 		

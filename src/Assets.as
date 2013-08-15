@@ -1,6 +1,7 @@
 package  
 {
 	import flash.display.Bitmap;
+	import flash.media.Sound;
 	import flash.utils.Dictionary;
 	import starling.textures.Texture;
 	import starling.textures.TextureAtlas;
@@ -15,6 +16,9 @@ package
 		
 		[Embed(source = "../assets/Arachnotaire_bgs/Arachnotaire_Ingame_bg.png")]
 		private static const IngameBG:Class;
+		
+		/*[Embed(source="../audio/music/test.mp3")]
+		private static const Soundtrack1:Class;*/
 		
 		/*[Embed(source = "../assets/Arachnotaire_bgs/Arachnotaire_Rules_Menu.png")]
 		private static const RulesMenuBG:Class;

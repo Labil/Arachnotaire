@@ -26,7 +26,6 @@ package
 		private function onAddedToStage(evt:Event):void
 		{
 			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
-			trace("Welcome screen initialized!");
 			
 			DrawScreen();
 		}

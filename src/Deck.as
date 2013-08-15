@@ -69,7 +69,6 @@
 		
 		//Undo
 		private var mSaveMovesObject:SaveMovesObject;
-		private var mUndoBtn:Button;
 		
 		//Score
 		private var mScoreMgr:ScoreManager;
@@ -79,6 +78,7 @@
 		
 		//Ingame menu
 		private var mIngameMenu:IngameMenu;
+		
 		
 		//Ctor
 		public function Deck(difficulty:int)
@@ -115,11 +115,6 @@
 			
 			mSaveMovesObject = new SaveMovesObject;
 			
-			mUndoBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_About_Btn"));
-			mUndoBtn.addEventListener(Event.TRIGGERED, Undo);
-			mUndoBtn.enabled = false;
-			this.addChild(mUndoBtn);
-			
 			mScoreMgr = new ScoreManager();
 			mScoreMgr.x = 50;
 			mScoreMgr.y = 400;
@@ -134,7 +129,9 @@
 			mIngameMenu.x = 50;
 			mIngameMenu.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
 			this.addChild(mIngameMenu);
+			CheckIfMorePossibleUndos();
 			
+			SoundManager.instance.PlayRandomMusic();
 		}
 		
 		public function Show():void
@@ -553,7 +550,7 @@
 			mSaveMovesObject.ClearSaves();
 		}
 		
-		private function Undo():void
+		public function Undo():void
 		{
 			var savedObject:Dictionary = new Dictionary();
 			savedObject = mSaveMovesObject.LoadLastMove();
@@ -569,9 +566,14 @@
 		private function CheckIfMorePossibleUndos():void
 		{
 			if (mSaveMovesObject.GetSavedMovesLength() > 0)
-				mUndoBtn.enabled = true;
+				SetUndoButtonState(true);
 			else
-				mUndoBtn.enabled = false;
+				SetUndoButtonState(false);
+		}
+		
+		private function SetUndoButtonState(bEnabled:Boolean):void
+		{
+			mIngameMenu.SetButtonState("undo", bEnabled);
 		}
 		
 		private function MoveCardBack(saved:Dictionary):void
@@ -899,7 +901,7 @@
 			CheckForWin();
 		}
 		
-		public function CheckForWin():void
+		private function CheckForWin():void
 		{
 			if (mCards.length == 0)
 			{
