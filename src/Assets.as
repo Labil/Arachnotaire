@@ -13,6 +13,9 @@ package
 		[Embed(source = "../assets/Arachnotaire_bgs/Arachnotaire_Startmenu_bg.png")]
 		private static const MainMenuBG:Class;
 		
+		[Embed(source = "../assets/Arachnotaire_bgs/Arachnotaire_Ingame_bg.png")]
+		private static const IngameBG:Class;
+		
 		/*[Embed(source = "../assets/Arachnotaire_bgs/Arachnotaire_Rules_Menu.png")]
 		private static const RulesMenuBG:Class;
 		

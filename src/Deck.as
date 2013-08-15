@@ -20,6 +20,9 @@
 	
 	public class Deck extends Sprite
 	{
+		//Background
+		private var bg:Image;
+		
 		private const CARDS_TOTAL:int = 104;
 		private const CARDS_ON_TABLE:int = 54;
 		private const CARDS_IN_DECK:int = 50;
@@ -64,10 +67,18 @@
 		
 		private var mOneColorType:String = "";
 		
-		//Saving last move to be able to undo
+		//Undo
 		private var mSaveMovesObject:SaveMovesObject;
-		
 		private var mUndoBtn:Button;
+		
+		//Score
+		private var mScoreMgr:ScoreManager;
+		
+		//Timecount
+		private var mClock:Clock;
+		
+		//Ingame menu
+		private var mIngameMenu:IngameMenu;
 		
 		//Ctor
 		public function Deck(difficulty:int)
@@ -81,6 +92,9 @@
 		{
 			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
 //			this.addEventListener(Event.REMOVED_FROM_STAGE, Cleanup);
+
+			bg = new Image(Assets.getTexture("IngameBG"));
+			this.addChild(bg);
 			//AddInGameMenu();
 			MakeDeck();
 			ShuffleDeck(mCards);
@@ -103,7 +117,23 @@
 			
 			mUndoBtn = new Button(Assets.getAtlas().getTexture("Arachnotaire_About_Btn"));
 			mUndoBtn.addEventListener(Event.TRIGGERED, Undo);
+			mUndoBtn.enabled = false;
 			this.addChild(mUndoBtn);
+			
+			mScoreMgr = new ScoreManager();
+			mScoreMgr.x = 50;
+			mScoreMgr.y = 400;
+			this.addChild(mScoreMgr);
+			
+			mClock = new Clock();
+			mClock.x = 200;
+			mClock.y = 400;
+			this.addChild(mClock);
+			
+			mIngameMenu = new IngameMenu();
+			mIngameMenu.x = 50;
+			mIngameMenu.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
+			this.addChild(mIngameMenu);
 			
 		}
 		
@@ -416,6 +446,8 @@
 							cardFromDeck.removeEventListener(TouchEvent.TOUCH, DealCards);
 									
 							MoveCardsFromDeckToTable(cardFromDeck, i);
+							ClearSavedMoves();
+							CheckIfMorePossibleUndos();
 						}
 						bMoveOnCooldown = true;
 						SetCooldownTimer(700);
@@ -424,6 +456,7 @@
 			}
 			
 		}
+		
 		private function ResetCooldown(e:TimerEvent):void
 		{
 			bMoveOnCooldown = false;
@@ -454,18 +487,16 @@
 			{
 				RemoveSortedFromTable(row);
 			}
-			mSaveMovesObject.ClearSaves();
+			
 				
 		}
 		
-		private function MoveCardToRow(card:Card, row:int, undo:Boolean = false, shouldUnflip:Boolean = false):void
+		private function MoveCardToRow(card:Card, row:int):void
 		{
-			var newCardBelow:Card;
 			var previousRow:int = card.GetRow();
 			var previousRowOldLength:int = mAllTableRows[previousRow].length;
 			var previousRowNewLength:int;
 			var movePos:Point;
-			var spaceY:int;
 			
 			for (var i:int = 0; i < mMovableCards.length; i++)
 			{
@@ -475,25 +506,10 @@
 			
 			previousRowNewLength = mAllTableRows[previousRow].length;
 			
-			if (!undo)
-				SaveMove(card, previousRow);
+			SaveMove(card, previousRow);
 			
-			if (mAllTableRows[row].length > 0)
-			{
-				if (shouldUnflip)
-				{
-					mAllTableRows[row][mAllTableRows[row].length - 1].UnflipCard();
-					spaceY = SPACING_Y_UNFLIPPED;
-				}
-				else spaceY = SPACING_Y;
-				
-				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + spaceY);
-			}
-			else
-			{
-				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
-			}
-			
+			mAllTableRows[row].length > 0 ? movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + SPACING_Y) : movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
+		
 			card.SetRow(row);
 			mAllTableRows[row].push(card);
 			
@@ -508,13 +524,11 @@
 			
 			UpdateTopCards();
 			
-			this.setChildIndex(card, numChildren - 1);
 			TweenLite.to(card, 0.1, { x:movePos.x, y:movePos.y, ease:Cubic.easeOut } );
 			
 			for (j = 0; j < mMovableCards.length; j++)
 			{
-				this.setChildIndex(mMovableCards[j], numChildren - 1);
-				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (spaceY * (j + 1)), ease:Cubic.easeOut } );
+				TweenLite.to(mMovableCards[j], 0.1, { x:movePos.x, y:movePos.y + (SPACING_Y * (j + 1)), ease:Cubic.easeOut } );
 			}
 			
 			if (mAllTableRows[row].length >= 18)
@@ -523,12 +537,20 @@
 				UnShrinkRow(previousRow);
 				
 		}
+		
 		private function SaveMove(card:Card, prevRow:int):void
 		{
-			var shouldUnflip:Boolean;
-			mAllTableRows[prevRow].length > 0 ? shouldUnflip = !mAllTableRows[prevRow][mAllTableRows[prevRow].length - 1].GetFlipped() : shouldUnflip = false;
+			var cardBelowAlreadyFlipped:Boolean;
+			mAllTableRows[prevRow].length > 0 ? cardBelowAlreadyFlipped = mAllTableRows[prevRow][mAllTableRows[prevRow].length - 1].GetFlipped() : cardBelowAlreadyFlipped = true; //Setter siste til true pga hvis det ikke var kort igjen i forrige kolonne så skal den ikke flippes tilbake uansett
 			
-			mMovableCards.length > 0 ? mSaveMovesObject.SaveLastMove(card, prevRow, shouldUnflip , mMovableCards.slice(0, mMovableCards.length)) : mSaveMovesObject.SaveLastMove(card, prevRow, shouldUnflip);	
+			mMovableCards.length > 0 ? mSaveMovesObject.SaveLastMove(card, prevRow, cardBelowAlreadyFlipped , mMovableCards.slice(0, mMovableCards.length)) : mSaveMovesObject.SaveLastMove(card, prevRow, cardBelowAlreadyFlipped);
+			
+			CheckIfMorePossibleUndos();
+		}
+		
+		private function ClearSavedMoves():void
+		{
+			mSaveMovesObject.ClearSaves();
 		}
 		
 		private function Undo():void
@@ -537,18 +559,92 @@
 			savedObject = mSaveMovesObject.LoadLastMove();
 			if (savedObject != null)
 			{
-				/*trace("Saved object index Card:" + savedObject["card"]);
-				trace("Saved object index rowCol:" + savedObject["row"] + " " + savedObject["col"]);
-				trace("Saved object index attached cards:" + savedObject["cards"]);*/
-				if (savedObject["cards"] != null)
-				{
-					mMovableCards = savedObject["cards"].slice(0, savedObject["cards"].length);
-				}
-					
-				MoveCardToRow(savedObject["card"], savedObject["col"], true, savedObject["unflip"]);
+				MoveCardBack(savedObject);
+				CheckIfMorePossibleUndos();
+				mScoreMgr.UpdateScore(ScoreManager.SCORE_UNDO);
 			}
 			else trace("Saved object is null");
 		}
+		
+		private function CheckIfMorePossibleUndos():void
+		{
+			if (mSaveMovesObject.GetSavedMovesLength() > 0)
+				mUndoBtn.enabled = true;
+			else
+				mUndoBtn.enabled = false;
+		}
+		
+		private function MoveCardBack(saved:Dictionary):void
+		{
+			var card:Card = saved["card"];
+			var row:int = saved["col"];
+			var cardBelowAlreadyFlipped:Boolean = saved["flipped"];
+			var attatchedCards:Vector.<Card>;
+			var previousRow:int = card.GetRow();
+			var previousRowOldLength:int = mAllTableRows[previousRow].length;
+			var previousRowNewLength:int;
+			var movePos:Point;
+			var spaceY:int;
+			
+			if (saved["cards"] != null)
+				attatchedCards = saved["cards"].slice(0, saved["cards"].length);
+			else
+				attatchedCards = new Vector.<Card>(0, true);
+			
+			for (var i:int = 0; i < attatchedCards.length; i++)
+			{
+				mAllTableRows[previousRow].pop(); 
+			}
+			
+			mAllTableRows[previousRow].pop();
+			
+			previousRowNewLength = mAllTableRows[previousRow].length;
+			
+			if (mAllTableRows[row].length > 0)
+			{
+				if (!cardBelowAlreadyFlipped)
+				{
+					mAllTableRows[row][mAllTableRows[row].length - 1].UnflipCard();
+					spaceY = SPACING_Y_UNFLIPPED;
+				}
+				else spaceY = SPACING_Y;
+				
+				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, mAllTableRows[row][mAllTableRows[row].length - 1].y + spaceY);
+			}
+			else
+			{
+				movePos = new Point((SPACING_X * row) + MARGIN_LEFT, MARGIN_TOP);
+			}
+				
+			card.SetRow(row);
+			mAllTableRows[row].push(card);
+			
+			for (var j:int = 0; j < attatchedCards.length; j++)
+			{
+				attatchedCards[j].SetRow(row);
+				mAllTableRows[row].push(attatchedCards[j]);
+			}
+			
+			LinkCards(mAllTableRows[row]);
+			LinkCards(mAllTableRows[previousRow]);
+			UpdateTopCards();
+			
+			this.setChildIndex(card, numChildren - 1);
+			TweenLite.to(card, 0.1, { x:movePos.x, y:movePos.y, ease:Cubic.easeOut } );
+			
+			for (j = 0; j < attatchedCards.length; j++)
+			{
+				this.setChildIndex(attatchedCards[j], numChildren - 1);
+				TweenLite.to(attatchedCards[j], 0.1, { x:movePos.x, y:movePos.y + (spaceY * (j + 1)), ease:Cubic.easeOut } );
+			}
+			
+			if (mAllTableRows[row].length >= 18)
+				ShrinkRow(row);
+			else if (previousRowOldLength >= 18 && previousRowNewLength < 18)
+				UnShrinkRow(previousRow);
+				
+		}
+		
 		private function ShrinkRow(row:int):void
 		{
 			for (var i:int = 0; i < mAllTableRows[row].length; i++)
@@ -796,7 +892,10 @@
 			
 			if (prevLength >= 18 && mAllTableRows[row].length < 18)
 				UnShrinkRow(row);
-				
+			
+			mScoreMgr.UpdateScore(ScoreManager.SCORE_CLEAR);
+			ClearSavedMoves();
+			CheckIfMorePossibleUndos();
 			CheckForWin();
 		}
 		
@@ -809,18 +908,6 @@
 			}
 			
 		}
-		
-		/*
-		
-		public function saveLastMove(o:Card, p:Card, pos:Point):void
-		{
-			lastObj = o;
-			lastTopCard = p;
-			_lastStartCoords = pos;
-			
-		}
-		
-		
 		
 	/*	public function Cleanup(e:Event):void
 		{
