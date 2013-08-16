@@ -12,7 +12,8 @@
 		private var startMenu:StartMenu;
 		private var difficultyMenu:DifficultyMenu;
 		private var mDifficulty:int;
-		private var bPlayMusic:Boolean = true; //Defaults to true, because sound initializes at start
+		private var winScreen:WinScreen;
+		
 		
 		public function Game() 
 		{
@@ -61,6 +62,12 @@
 					StartGame();
 					difficultyMenu.Hide();
 					break;
+				case "win":
+					ShowWinScreen(evt.params.time, evt.params.score);
+					break;
+				case "winclose":
+					CloseWinScreen();
+					break;
 				default: break;
 					
 			}
@@ -69,9 +76,31 @@
 		{
 			if (deck != null)
 				this.removeChild(deck, true);
+			else
+				SoundManager.instance.PlayRandomMusic();
 			if (mDifficulty != 1 && mDifficulty != 2 && mDifficulty != 3)
 				mDifficulty = 1;
 					
+			deck = new Deck(mDifficulty);
+			this.addChild(deck);
+		}
+		private function ShowWinScreen(time:String, score:int):void
+		{
+			var color:String = "";
+			
+			if (deck != null)
+				color = deck.GetCardType()
+				
+			winScreen = new WinScreen(mDifficulty, color, time, score);
+			this.addChild(winScreen);
+			winScreen.Show();
+		}
+		private function CloseWinScreen():void
+		{
+			if(winScreen != null)
+				this.removeChild(winScreen, true);
+			if (deck != null)
+				this.removeChild(deck, true);
 			deck = new Deck(mDifficulty);
 			this.addChild(deck);
 		}
@@ -88,8 +117,11 @@
 				case "restart":
 					StartGame();
 					break;
-				case "sound":
-					MusicOnOff();
+				case "soundON":
+					MusicOn();
+					break;
+				case "soundOFF":
+					MusicOff();
 					break;
 				case "undo":
 					deck.Undo();
@@ -98,19 +130,13 @@
 					
 			}
 		}
-		private function MusicOnOff():void
+		private function MusicOff():void
 		{
-			if (bPlayMusic)
-			{
-				SoundManager.instance.PauseSoundtrack();
-				bPlayMusic = false;
-			}
-			else
-			{
-				SoundManager.instance.PlayRandomMusic();
-			}
-				
-			
+			SoundManager.instance.PauseSoundtrack();
+		}
+		private function MusicOn():void
+		{
+			SoundManager.instance.PlayRandomMusic();
 		}
 		
 

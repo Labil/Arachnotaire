@@ -23,8 +23,6 @@
 		private var mRow:int;
 		private const cardWidth:int = 65;
 		private const cardHeight:int = 94;
-		//private var cardWidth:int;
-		//private var cardHeight:int;
 		private const numberWidth:int = 25;
 		private const numberHeight:int = 33;
 		
@@ -36,7 +34,6 @@
 			mType = _type;
 			mValue = _value;
 			SetCardGraphics();
-			//SetClickable(true); //Sets to false when the card is being released from a move and until it is back in its place, so no double clicks to fuck up the movement
 		}
 		public function SetOnTop(b:Boolean):void { mIsOnTop = b; }
 		public function GetOnTop():Boolean { return mIsOnTop; }

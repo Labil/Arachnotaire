@@ -79,6 +79,8 @@
 		//Ingame menu
 		private var mIngameMenu:IngameMenu;
 		
+		private var bWon:Boolean = false; //To keep the event to fire more than one time
+		
 		
 		//Ctor
 		public function Deck(difficulty:int)
@@ -95,7 +97,7 @@
 
 			bg = new Image(Assets.getTexture("IngameBG"));
 			this.addChild(bg);
-			//AddInGameMenu();
+			
 			MakeDeck();
 			ShuffleDeck(mCards);
 			SeparateTableAndDeck();
@@ -115,23 +117,8 @@
 			
 			mSaveMovesObject = new SaveMovesObject;
 			
-			mScoreMgr = new ScoreManager();
-			mScoreMgr.x = 50;
-			mScoreMgr.y = 400;
-			this.addChild(mScoreMgr);
+			AddInGameMenu();
 			
-			mClock = new Clock();
-			mClock.x = 200;
-			mClock.y = 400;
-			this.addChild(mClock);
-			
-			mIngameMenu = new IngameMenu();
-			mIngameMenu.x = 50;
-			mIngameMenu.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
-			this.addChild(mIngameMenu);
-			CheckIfMorePossibleUndos();
-			
-			SoundManager.instance.PlayRandomMusic();
 		}
 		
 		public function Show():void
@@ -142,6 +129,25 @@
 		public function Hide():void
 		{
 			this.visible = false;
+		}
+		
+		private function AddInGameMenu():void
+		{
+			mIngameMenu = new IngameMenu();
+			mIngameMenu.x = 50;
+			mIngameMenu.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
+			this.addChild(mIngameMenu);
+			CheckIfMorePossibleUndos();
+			
+			mScoreMgr = new ScoreManager();
+			mScoreMgr.x = 350;
+			mScoreMgr.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
+			this.addChild(mScoreMgr);
+			
+			mClock = new Clock();
+			mClock.x = 500;
+			mClock.y = this.stage.stageHeight/2 + this.stage.stageHeight/3;
+			this.addChild(mClock);
 		}
 		
 		private function GenerateRandomType():String
@@ -441,7 +447,7 @@
 						{
 							cardFromDeck = mCardsDeck[mCardsDeck.length - 1]; //Gets the last card of the deck vector
 							cardFromDeck.removeEventListener(TouchEvent.TOUCH, DealCards);
-									
+							
 							MoveCardsFromDeckToTable(cardFromDeck, i);
 							ClearSavedMoves();
 							CheckIfMorePossibleUndos();
@@ -867,12 +873,11 @@
 			for (var i:int = 0; i < mAllTableRows[row].length-1; i++)
 			{
 				
-					if (mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetValue() == mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetValue() - 1 && mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetType() ==mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetType())
+					if (mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetFlipped() && mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetFlipped() && mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetValue() == mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetValue() - 1 && mAllTableRows[row][mAllTableRows[row].length - (i+1)].GetType() == mAllTableRows[row][mAllTableRows[row].length - (i+2)].GetType())
 					{
 						cardMatchNum++;
 					}
 					else break;
-				
 				
 			}
 			if (cardMatchNum >= 12)
@@ -905,10 +910,17 @@
 		{
 			if (mCards.length == 0)
 			{
-				var winScreen:WinScreen = new WinScreen(mDifficulty, mOneColorType);
-				this.addChild(winScreen);
+				if (!bWon)
+				{
+					bWon = true;
+					this.dispatchEvent(new NavigationEvent(NavigationEvent.CHANGE_SCREEN, { id:"win", time:mClock.GetTimePlayed(), score:mScoreMgr.GetCurrentScore() }, true));
+				}
 			}
 			
+		}
+		public function GetCardType():String
+		{
+			return mOneColorType;
 		}
 		
 	/*	public function Cleanup(e:Event):void
